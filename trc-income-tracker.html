@@ -434,13 +434,22 @@ async function handleAuth() {
 
   try {
     if (isRegisterMode) {
-      const { error } = await sb.auth.signUp({ email, password });
+      const { error } = await sb.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html' }
+      });
       if (error) throw error;
+      // Показываем сообщение что нужно подтвердить email
+      showAuthError('✅ Аккаунт создан! Проверь email и нажми ссылку для подтверждения.');
+      btn.disabled = false;
+      btn.textContent = 'Зарегистрироваться';
+      return;
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
     }
   } catch(e) {
+
     let msg = e.message || String(e);
     if (msg.includes('Invalid login')) msg = 'Неверный email или пароль';
     if (msg.includes('already registered')) msg = 'Этот email уже зарегистрирован. Войди.';
