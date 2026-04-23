@@ -4,208 +4,202 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRC Income Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #f5f4f1;
-    --card: #ffffff;
-    --border: #e5e2db;
-    --text: #1a1814;
-    --muted: #8a8680;
-    --accent: #1a1814;
-    --green: #1a7a4a;
-    --green-bg: #edf7f1;
-    --red: #b83232;
-    --red-bg: #fdf0f0;
-    --yellow: #f5a623;
-    --yellow-bg: #fffbf0;
-    --yellow-border: #f5d68a;
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  
-  /* Layout */
-  .screen { display: none; min-height: 100vh; padding-bottom: 80px; }
-  .screen.active { display: block; }
-  .header { position: sticky; top: 0; z-index: 100; background: rgba(245,244,241,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
-  .header-title { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
-  .header-sub { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px; }
-  .content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-
-  /* Cards */
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-  .card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
-  .summary-card { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 18px; }
-  .summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
-  .summary-amount { font-size: 38px; font-weight: 700; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-  .summary-amount.green { color: #4ade80; }
-  .summary-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
-  .summary-row { display: flex; justify-content: space-between; font-size: 12px; }
-  .summary-row .lbl { color: rgba(255,255,255,0.5); }
-  .summary-row .val { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.85); font-weight: 500; }
-  .summary-row.accent .lbl { color: #4ade80; }
-  .summary-row.accent .val { color: #4ade80; font-weight: 700; }
-  .summary-row.neg .lbl { color: #f87171; }
-  .summary-row.neg .val { color: #f87171; }
-  .summary-row.bold .lbl { color: rgba(255,255,255,0.9); font-weight: 600; }
-  .summary-row.bold .val { color: #fff; font-weight: 700; }
-
-  /* Job items */
-  .job-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: opacity 0.1s; }
-  .job-item:active { opacity: 0.7; }
-  .job-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
-  .job-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job-source { font-size: 12px; color: var(--muted); }
-  .job-desc { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); text-align: right; }
-  .job-amount.red { color: var(--red); }
-  .job-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .job-footer { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-  .job-cell-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-  .job-cell-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .job-cell-val.yellow { color: #b45309; }
-
-  /* Buttons */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; font-family: inherit; font-weight: 600; transition: opacity 0.1s, transform 0.1s; border-radius: var(--radius-sm); }
-  .btn:active { opacity: 0.7; transform: scale(0.97); }
-  .btn-primary { background: var(--accent); color: #fff; padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; }
-  .btn-secondary { background: transparent; color: var(--text); padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; border: 1.5px solid var(--border); }
-  .btn-icon { background: transparent; color: var(--muted); padding: 8px; border-radius: 50%; }
-  .btn-icon:hover { background: var(--border); }
-  .btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
-  .btn-amber { background: #f59e0b; color: #fff; }
-  .btn-row { display: flex; gap: 10px; }
-  .btn-row .btn-primary { flex: 2; }
-  .btn-row .btn-secondary { flex: 1; }
-
-  /* FAB */
-  .fab { position: fixed; bottom: 24px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 26px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; z-index: 50; transition: transform 0.15s; }
-  .fab:active { transform: scale(0.92); }
-
-  /* Forms */
-  .field { margin-bottom: 0; }
-  .field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
-  .field-label.yellow { color: #b45309; font-weight: 600; }
-  .field-input { width: 100%; padding: 10px 12px; background: #f8f7f4; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
-  .field-input:focus { border-color: var(--accent); }
-  .field-input.yellow-input { background: #fffbee; border-color: var(--yellow-border); }
-  .field-input.yellow-input:focus { border-color: var(--yellow); }
-  .field-textarea { resize: none; min-height: 64px; }
-  .field-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8680' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  /* Upload zones */
-  .upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; transition: border-color 0.15s; }
-  .upload-zone:hover, .upload-zone:active { border-color: var(--accent); }
-  .upload-zone.yellow-zone { border-color: var(--yellow-border); background: #fffbf0; }
-  .upload-zone.yellow-zone:hover { border-color: var(--yellow); }
-  .upload-zone input { display: none; }
-  .upload-icon { font-size: 22px; margin-bottom: 6px; }
-  .upload-text { font-size: 13px; font-weight: 600; }
-  .upload-text.yellow { color: #b45309; }
-  .upload-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
-
-  /* Calc breakdown */
-  .calc-card { background: var(--accent); color: #fff; border-radius: var(--radius); overflow: hidden; }
-  .calc-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-  .calc-header-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); font-weight: 600; }
-  .calc-body { padding: 0 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
-  .calc-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
-  .calc-row .cl { color: rgba(255,255,255,0.5); }
-  .calc-row .cv { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8); }
-  .calc-row.bold .cl { color: rgba(255,255,255,0.9); font-weight: 600; }
-  .calc-row.bold .cv { color: #fff; font-weight: 700; }
-  .calc-row.neg .cl { color: #f87171; }
-  .calc-row.neg .cv { color: #f87171; }
-  .calc-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.15); }
-  .calc-total-label { font-size: 16px; font-weight: 700; }
-  .calc-total-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .calc-total-val.green { color: #4ade80; }
-  .calc-total-val.red { color: #f87171; }
-  .calc-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
-
-  /* Notices */
-  .notice { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
-  .notice.success { background: var(--green-bg); color: #155e36; border: 1px solid #a7f3c8; }
-  .notice.error { background: var(--red-bg); color: #7f1d1d; border: 1px solid #fca5a5; }
-  .notice-icon { flex-shrink: 0; margin-top: 1px; }
-  .notice-body { flex: 1; }
-  .notice-title { font-weight: 700; margin-bottom: 4px; }
-  .notice-text { font-family: monospace; font-size: 11px; word-break: break-all; white-space: pre-wrap; max-height: 120px; overflow: auto; background: rgba(0,0,0,0.05); padding: 6px 8px; border-radius: 4px; margin-top: 4px; }
-  .notice-copy { font-size: 11px; text-decoration: underline; cursor: pointer; margin-top: 6px; display: inline-block; }
-
-  /* Settings */
-  .co-item { display: flex; align-items: flex-start; justify-content: space-between; }
-  .co-name { font-weight: 600; font-size: 15px; }
-  .co-pct { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
-  .co-notes { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .co-actions { display: flex; gap: 0; flex-shrink: 0; }
-  .dashed-btn { border: 2px dashed var(--border); background: transparent; border-radius: 12px; width: 100%; padding: 13px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
-  .dashed-btn:hover { border-color: var(--accent); color: var(--text); }
-  .info-box { background: #f0efec; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: #5a5750; line-height: 1.6; }
-
-  /* API key screen */
-  .apikey-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; }
-  .apikey-logo { font-size: 48px; margin-bottom: 16px; }
-  .apikey-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; text-align: center; }
-  .apikey-sub { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
-  .apikey-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
-  .apikey-link { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
-  .apikey-link a { color: var(--accent); }
-
-  /* Empty state */
-  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
-  .empty-text { font-size: 14px; }
-
-  /* Loading spinner */
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-  .spinner.dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--accent); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Divider */
-  hr { border: none; border-top: 1px solid var(--border); }
-
-  /* Bottom bar */
-  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(245,244,241,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 12px 16px; z-index: 50; }
-
-  /* Collapsible */
-  .collapsible-body { display: none; }
-  .collapsible-body.open { display: block; }
-  .chevron { transition: transform 0.2s; display: inline-block; }
-  .chevron.open { transform: rotate(180deg); }
-
-  /* Delete btn */
-  .delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; font-size: 16px; }
-  .delete-btn:active { color: var(--red); }
-
-  /* Tags */
-  .tag { display: inline-flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 2px 10px; font-size: 11px; color: var(--muted); }
+:root {
+  --bg: #f5f4f1; --card: #fff; --border: #e5e2db; --text: #1a1814;
+  --muted: #8a8680; --accent: #1a1814; --green: #1a7a4a; --green-bg: #edf7f1;
+  --red: #b83232; --red-bg: #fdf0f0; --yellow: #f5a623;
+  --yellow-bg: #fffbf0; --yellow-border: #f5d68a; --r: 14px; --rs: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.screen { display: none; min-height: 100vh; padding-bottom: 80px; }
+.screen.active { display: block; }
+.center-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; }
+.header { position: sticky; top: 0; z-index: 100; background: rgba(245,244,241,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+.header-title { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+.header-sub { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px; }
+.content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+.card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+.summary-card { background: var(--accent); color: #fff; border-radius: var(--r); padding: 18px; }
+.summary-amount { font-size: 38px; font-weight: 700; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.summary-amount.green { color: #4ade80; }
+.summary-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 12px; }
+.summary-row .lbl { color: rgba(255,255,255,0.5); }
+.summary-row .val { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.85); font-weight: 500; }
+.summary-row.accent .lbl,.summary-row.accent .val { color: #4ade80; font-weight: 700; }
+.summary-row.neg .lbl,.summary-row.neg .val { color: #f87171; }
+.summary-row.bold .lbl { color: rgba(255,255,255,0.9); font-weight: 600; }
+.summary-row.bold .val { color: #fff; font-weight: 700; }
+.job-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; cursor: pointer; transition: opacity 0.1s; }
+.job-item:active { opacity: 0.7; }
+.job-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.job-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-source { font-size: 12px; color: var(--muted); }
+.job-desc { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); text-align: right; }
+.job-amount.red { color: var(--red); }
+.job-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.job-footer { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.job-cell-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.job-cell-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.job-cell-val.yellow { color: #b45309; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; font-family: inherit; font-weight: 600; transition: opacity 0.1s, transform 0.1s; border-radius: var(--rs); }
+.btn:active { opacity: 0.7; transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: #fff; padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; }
+.btn-secondary { background: transparent; color: var(--text); padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; border: 1.5px solid var(--border); }
+.btn-icon { background: transparent; color: var(--muted); padding: 8px; border-radius: 50%; }
+.btn-icon:hover { background: var(--border); }
+.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+.btn-amber { background: #f59e0b; color: #fff; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn-primary { flex: 2; }
+.btn-row .btn-secondary { flex: 1; }
+.fab { position: fixed; bottom: 24px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 26px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; z-index: 50; transition: transform 0.15s; }
+.fab:active { transform: scale(0.92); }
+.field { margin-bottom: 0; }
+.field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
+.field-label.yellow { color: #b45309; font-weight: 600; }
+.field-input { width: 100%; padding: 10px 12px; background: #f8f7f4; border: 1.5px solid var(--border); border-radius: var(--rs); font-family: inherit; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+.field-input:focus { border-color: var(--accent); }
+.field-input.yellow-input { background: #fffbee; border-color: var(--yellow-border); }
+.field-textarea { resize: none; min-height: 64px; }
+.field-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8680' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; transition: border-color 0.15s; }
+.upload-zone:hover { border-color: var(--accent); }
+.upload-zone.yellow-zone { border-color: var(--yellow-border); background: var(--yellow-bg); }
+.upload-zone input { display: none; }
+.upload-icon { font-size: 22px; margin-bottom: 6px; }
+.upload-text { font-size: 13px; font-weight: 600; }
+.upload-text.yellow { color: #b45309; }
+.upload-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.calc-card { background: var(--accent); color: #fff; border-radius: var(--r); overflow: hidden; }
+.calc-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.calc-header-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); font-weight: 600; }
+.calc-body { padding: 0 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+.calc-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+.calc-row .cl { color: rgba(255,255,255,0.5); }
+.calc-row .cv { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8); }
+.calc-row.bold .cl { color: rgba(255,255,255,0.9); font-weight: 600; }
+.calc-row.bold .cv { color: #fff; font-weight: 700; }
+.calc-row.neg .cl { color: #f87171; }
+.calc-row.neg .cv { color: #f87171; }
+.calc-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.15); }
+.calc-total-label { font-size: 16px; font-weight: 700; }
+.calc-total-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.calc-total-val.green { color: #4ade80; }
+.calc-total-val.red { color: #f87171; }
+.calc-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+.notice { border-radius: var(--rs); padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
+.notice.success { background: var(--green-bg); color: #155e36; border: 1px solid #a7f3c8; }
+.notice.error { background: var(--red-bg); color: #7f1d1d; border: 1px solid #fca5a5; }
+.notice.info { background: #eff6ff; color: #1e3a5f; border: 1px solid #bfdbfe; }
+.notice-icon { flex-shrink: 0; }
+.notice-body { flex: 1; }
+.notice-title { font-weight: 700; margin-bottom: 4px; }
+.notice-text { font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; max-height: 100px; overflow: auto; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 4px; margin-top: 4px; }
+.co-item { display: flex; align-items: flex-start; justify-content: space-between; }
+.co-name { font-weight: 600; font-size: 15px; }
+.co-pct { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.co-notes { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.dashed-btn { border: 2px dashed var(--border); background: transparent; border-radius: 12px; width: 100%; padding: 13px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
+.dashed-btn:hover { border-color: var(--accent); color: var(--text); }
+.info-box { background: #f0efec; border-radius: var(--rs); padding: 12px 14px; font-size: 12px; color: #5a5750; line-height: 1.6; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+.empty-text { font-size: 14px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+.spinner.dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-full { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+hr { border: none; border-top: 1px solid var(--border); }
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(245,244,241,0.95); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 12px 16px; z-index: 50; }
+.delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; font-size: 16px; }
+.delete-btn:active { color: var(--red); }
+.auth-logo { font-size: 52px; margin-bottom: 16px; }
+.auth-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; text-align: center; }
+.auth-sub { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
+.auth-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
+.auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
+.auth-toggle span { color: var(--accent); cursor: pointer; font-weight: 600; text-decoration: underline; }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.badge-admin { background: #fef3c7; color: #92400e; }
+.badge-active { background: var(--green-bg); color: var(--green); }
+.badge-pending { background: #eff6ff; color: #1e40af; }
+.badge-suspended { background: var(--red-bg); color: var(--red); }
+.user-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+.user-row:last-child { border-bottom: none; }
+.collapsible-body { display: none; }
+.collapsible-body.open { display: block; }
+.chevron { transition: transform 0.2s; display: inline-block; }
+.chevron.open { transform: rotate(180deg); }
 </style>
 </head>
 <body>
 
-<!-- ═══════ API KEY SCREEN ═══════ -->
-<div id="screen-apikey" class="apikey-screen" style="display:none">
-  <div class="apikey-logo">🔧</div>
-  <div class="apikey-title">TRC Income Tracker</div>
-  <div class="apikey-sub">Введи бесплатный Google Gemini API Key для распознавания скриншотов. 1500 запросов в день — бесплатно, без карты. Ключ хранится только в твоём браузере.</div>
-  <div class="apikey-form">
-    <div class="field">
-      <label class="field-label">Google Gemini API Key</label>
-      <input id="apikey-input" type="password" class="field-input" placeholder="AIza…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    </div>
-    <button class="btn btn-primary btn-amber" onclick="saveApiKey()">Сохранить и продолжить</button>
-    <div class="apikey-link">Получить бесплатный ключ: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></div>
-    <div id="apikey-error" class="notice error" style="display:none">
-      <div class="notice-icon">⚠️</div>
-      <div class="notice-body"><div class="notice-title">Ошибка</div><div id="apikey-error-text"></div></div>
+<!-- LOADING -->
+<div id="loading" class="spinner-full"><div class="spinner dark" style="width:32px;height:32px;border-width:3px"></div></div>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="screen">
+  <div class="center-screen">
+    <div class="auth-logo">🔧</div>
+    <div class="auth-title">TRC Income Tracker</div>
+    <div class="auth-sub" id="auth-sub">Войди в свой аккаунт чтобы продолжить</div>
+    <div class="auth-form">
+      <div class="field">
+        <label class="field-label">Email</label>
+        <input id="auth-email" type="email" class="field-input" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label class="field-label">Пароль</label>
+        <input id="auth-password" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="auth-name-field" class="field" style="display:none">
+        <label class="field-label">Имя (необязательно)</label>
+        <input id="auth-name" type="text" class="field-input" placeholder="Павло Деркач">
+      </div>
+      <button id="auth-submit" class="btn btn-primary btn-amber" onclick="handleAuth()">Войти</button>
+      <div id="auth-error" class="notice error" style="display:none">
+        <div class="notice-icon">⚠️</div>
+        <div class="notice-body"><div id="auth-error-text"></div></div>
+      </div>
+      <div class="auth-toggle" id="auth-toggle-text">
+        Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════ JOB LIST ═══════ -->
+<!-- PENDING SCREEN -->
+<div id="screen-pending" class="screen">
+  <div class="center-screen">
+    <div style="font-size:52px;margin-bottom:16px">⏳</div>
+    <div class="auth-title">Заявка отправлена</div>
+    <div class="auth-sub">Твоя учётная запись ожидает одобрения администратора. Попробуй войти позже.</div>
+    <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px">
+      <button class="btn btn-secondary" onclick="sb.auth.signOut()">Выйти</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUSPENDED SCREEN -->
+<div id="screen-suspended" class="screen">
+  <div class="center-screen">
+    <div style="font-size:52px;margin-bottom:16px">🚫</div>
+    <div class="auth-title">Доступ заблокирован</div>
+    <div class="auth-sub">Твоя учётная запись заблокирована. Свяжись с администратором.</div>
+    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="sb.auth.signOut()">Выйти</button>
+  </div>
+</div>
+
+<!-- JOB LIST -->
 <div id="screen-list" class="screen">
   <div class="header">
     <div>
@@ -213,8 +207,9 @@
       <div class="header-title">Журнал джобов</div>
     </div>
     <div style="display:flex;gap:4px">
+      <button id="admin-btn" class="btn btn-icon" onclick="showScreen('admin')" title="Админ" style="display:none">👑</button>
       <button class="btn btn-icon" onclick="showScreen('settings')" title="Настройки">⚙️</button>
-      <button class="btn btn-icon" onclick="showApiKeyScreen()" title="API Key">🔑</button>
+      <button class="btn btn-icon" onclick="confirmLogout()" title="Выйти">🚪</button>
     </div>
   </div>
   <div class="content">
@@ -224,7 +219,7 @@
   <button class="fab" onclick="openForm(null)">+</button>
 </div>
 
-<!-- ═══════ JOB FORM ═══════ -->
+<!-- JOB FORM -->
 <div id="screen-form" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
@@ -232,35 +227,28 @@
     <div style="width:36px"></div>
   </div>
   <div class="content">
-
-    <!-- Job screenshots -->
+    <!-- Screenshots -->
     <div class="card">
       <div class="card-label">1. Скриншоты джоба</div>
-      <label class="upload-zone" id="screenshots-zone">
+      <label class="upload-zone">
         <input type="file" id="screenshots-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="handleScreenshots(this)">
         <div class="upload-icon">📸</div>
         <div class="upload-text" id="screenshots-text">Фото / скриншот карточки HCP</div>
         <div class="upload-hint">Клиент, дата, стоимость, lead source</div>
       </label>
     </div>
-
     <!-- Invoice -->
     <div class="card" style="border-color:var(--yellow-border);background:var(--yellow-bg)">
-      <div class="card-label" style="color:#b45309">2. Инвойс на закупку з/ч <span style="font-weight:400;text-transform:none;font-size:10px;letter-spacing:0">(Parts Purchase Price)</span></div>
-      <label class="upload-zone yellow-zone" id="invoice-zone">
+      <div class="card-label" style="color:#b45309">2. Инвойс на закупку з/ч <span style="font-weight:400;text-transform:none;font-size:10px">(Parts Purchase Price)</span></div>
+      <label class="upload-zone yellow-zone">
         <input type="file" id="invoice-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="handleInvoice(this)">
         <div class="upload-icon">📄</div>
         <div class="upload-text yellow" id="invoice-text">Загрузить инвойс</div>
         <div class="upload-hint">Закупочная стоимость → Net Profit Pool</div>
       </label>
     </div>
-
-    <!-- Notices -->
     <div id="form-notice" style="display:none"></div>
-
-    <!-- Attached files -->
     <div id="attached-files" class="card" style="display:none"></div>
-
     <!-- Fields -->
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">3. Данные джоба</div>
@@ -307,9 +295,8 @@
         </div>
       </div>
     </div>
-
     <!-- Calc -->
-    <div class="calc-card" id="calc-card">
+    <div class="calc-card">
       <div class="calc-header" onclick="toggleCalc()">
         <div class="calc-header-label">Расчёт выплаты</div>
         <div class="chevron open" id="calc-chevron">▾</div>
@@ -322,137 +309,205 @@
         </div>
       </div>
     </div>
-
   </div>
   <div class="bottom-bar">
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="showScreen('list')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveJob()">Сохранить</button>
+      <button id="save-btn" class="btn btn-primary" onclick="saveJob()">Сохранить</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════ SETTINGS ═══════ -->
+<!-- SETTINGS -->
 <div id="screen-settings" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
-    <div class="header-title">Lead Sources</div>
+    <div class="header-title">Настройки</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
     <div class="info-box">
-      <strong>Commission %</strong> применяется к Subtotal (Services + Parts for Client).<br>
+      <strong>Commission %</strong> — доля поставщика от Subtotal.<br>
       Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>
-      Твоя доля: <strong>40% от Net Profit Pool</strong>.
+      Твоя доля: <strong id="settings-pct-label">40%</strong> от Net Profit Pool.
     </div>
-    <div id="companies-list" style="display:flex;flex-direction:column;gap:10px"></div>
-    <button class="dashed-btn" onclick="addCompany()">＋ Добавить поставщика</button>
 
-    <div class="card" style="margin-top:4px">
-      <div class="card-label">Твоя доля</div>
+    <div class="card">
+      <div class="card-label">Моя доля от Net Profit Pool</div>
       <div style="display:flex;align-items:center;gap:12px">
         <input id="tech-pct-input" type="number" min="1" max="100" step="1" class="field-input" style="width:80px" value="40">
-        <span style="font-size:14px;color:var(--muted)">% от Net Profit Pool</span>
+        <span style="font-size:14px;color:var(--muted)">%</span>
       </div>
     </div>
 
-    <hr>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn btn-secondary btn-sm" onclick="exportData()" style="width:auto;align-self:flex-start">📤 Экспорт данных (JSON)</button>
-      <button class="btn btn-secondary btn-sm" onclick="importData()" style="width:auto;align-self:flex-start">📥 Импорт данных</button>
-      <input type="file" id="import-input" accept=".json" style="display:none" onchange="doImport(this)">
+    <div class="card">
+      <div class="card-label" style="margin-bottom:14px">Gemini API Key</div>
+      <div class="field">
+        <input id="settings-apikey" type="password" class="field-input" placeholder="AIza…" autocomplete="off">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Получить бесплатно: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a></div>
     </div>
+
+    <div id="companies-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="dashed-btn" onclick="addCompany()">＋ Добавить поставщика</button>
+
+    <hr>
+    <button class="btn btn-secondary btn-sm" onclick="confirmLogout()" style="width:auto;align-self:flex-start">🚪 Выйти из аккаунта</button>
   </div>
   <div class="bottom-bar">
     <button class="btn btn-primary" onclick="saveSettings()">Сохранить настройки</button>
   </div>
 </div>
 
+<!-- ADMIN PANEL -->
+<div id="screen-admin" class="screen">
+  <div class="header">
+    <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
+    <div class="header-title">👑 Админ</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="content">
+    <div class="info-box">Управление пользователями. Одобряй заявки, меняй роли, блокируй доступ.</div>
+    <div class="card">
+      <div class="card-label" style="margin-bottom:14px">Пользователи</div>
+      <div id="admin-users-list">
+        <div class="empty-state"><div class="spinner dark"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════
-// INDEXEDDB — хранилище скриншотов
+// INIT
 // ═══════════════════════════════════════
-const DB_NAME = "trc_tracker";
-const DB_VERSION = 1;
-const STORE_SCREENSHOTS = "screenshots";
+const SUPABASE_URL = 'https://kyiixiwlsffpjzrojoaq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function openDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_SCREENSHOTS)) {
-        const store = db.createObjectStore(STORE_SCREENSHOTS, { keyPath: "id", autoIncrement: true });
-        store.createIndex("jobId", "jobId", { unique: false });
-      }
-    };
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
-}
-
-async function saveScreenshot(jobId, file, kind) {
-  // kind: "hcp" (скриншот джоба) или "invoice"
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(STORE_SCREENSHOTS, "readwrite");
-    const store = tx.objectStore(STORE_SCREENSHOTS);
-    const req = store.add({ jobId, kind, blob: file, name: file.name, type: file.type, uploaded: Date.now() });
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
-}
-
-async function getScreenshotsForJob(jobId) {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(STORE_SCREENSHOTS, "readonly");
-    const idx = tx.objectStore(STORE_SCREENSHOTS).index("jobId");
-    const req = idx.getAll(jobId);
-    req.onsuccess = () => res(req.result || []);
-    req.onerror = () => rej(req.error);
-  });
-}
-
-async function deleteScreenshot(id) {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(STORE_SCREENSHOTS, "readwrite");
-    const req = tx.objectStore(STORE_SCREENSHOTS).delete(id);
-    req.onsuccess = () => res();
-    req.onerror = () => rej(req.error);
-  });
-}
-
-async function deleteScreenshotsForJob(jobId) {
-  const list = await getScreenshotsForJob(jobId);
-  for (const s of list) await deleteScreenshot(s.id);
-}
-
-// Временное хранилище файлов для НОВОГО джоба (до сохранения)
-let pendingFiles = { hcp: [], invoice: [] };
-
-// ═══════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════
 const DEFAULT_COMPANIES = [
-  { id:"humber", name:"Humber Appliance Repair", commissionPct:0.2792, notes:"Calculated from invoice: 187.65/672.12" },
-  { id:"jiffy",  name:"Jiffy On Demand",          commissionPct:0.30,   notes:"Default 30%" },
-  { id:"dave",   name:"Dave",                      commissionPct:0.25,   notes:"Default 25%" },
+  { name:'Humber Appliance Repair', commission_pct:0.2792, notes:'Calculated from invoice: 187.65/672.12', sort_order:1 },
+  { name:'Jiffy On Demand', commission_pct:0.30, notes:'Default 30%', sort_order:2 },
+  { name:'Dave', commission_pct:0.25, notes:'Default 25%', sort_order:3 },
 ];
 
-let state = {
-  apiKey: localStorage.getItem("trc_apikey") || "",
-  techPct: parseFloat(localStorage.getItem("trc_techpct") || "0.40"),
-  companies: JSON.parse(localStorage.getItem("trc_companies") || "null") || DEFAULT_COMPANIES,
-  jobs: JSON.parse(localStorage.getItem("trc_jobs") || "[]"),
-  editingJobId: null,
-};
+let currentUser = null;
+let currentProfile = null;
+let state = { jobs:[], companies:[], techPct:0.40, apiKey:'', editingJobId:null };
+let pendingFiles = { hcp:[], invoice:[] };
 
-function save() {
-  localStorage.setItem("trc_companies", JSON.stringify(state.companies));
-  localStorage.setItem("trc_jobs", JSON.stringify(state.jobs));
-  localStorage.setItem("trc_techpct", String(state.techPct));
+// Auth state listener
+sb.auth.onAuthStateChange(async (event, session) => {
+  document.getElementById('loading').style.display = 'none';
+  if (!session) { showScreen('auth'); return; }
+  currentUser = session.user;
+  await loadProfile();
+});
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+let isRegisterMode = false;
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('auth-sub').textContent = isRegisterMode
+    ? 'Создай аккаунт — администратор одобрит доступ'
+    : 'Войди в свой аккаунт чтобы продолжить';
+  document.getElementById('auth-submit').textContent = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
+  document.getElementById('auth-name-field').style.display = isRegisterMode ? 'block' : 'none';
+  document.getElementById('auth-toggle-text').innerHTML = isRegisterMode
+    ? 'Уже есть аккаунт? <span onclick="toggleAuthMode()">Войти</span>'
+    : 'Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-submit');
+  if (!email || !password) { showAuthError('Заполни email и пароль'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Загрузка…';
+  document.getElementById('auth-error').style.display = 'none';
+
+  try {
+    if (isRegisterMode) {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch(e) {
+    let msg = e.message || String(e);
+    if (msg.includes('Invalid login')) msg = 'Неверный email или пароль';
+    if (msg.includes('already registered')) msg = 'Этот email уже зарегистрирован. Войди.';
+    if (msg.includes('Password should')) msg = 'Пароль должен быть минимум 6 символов';
+    showAuthError(msg);
+    btn.disabled = false;
+    btn.textContent = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
+  }
+}
+
+function showAuthError(msg) {
+  document.getElementById('auth-error').style.display = 'flex';
+  document.getElementById('auth-error-text').textContent = msg;
+}
+
+async function loadProfile() {
+  const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (error || !data) {
+    // Профиль ещё не создан — ждём
+    setTimeout(loadProfile, 1000);
+    return;
+  }
+  currentProfile = data;
+  state.techPct = data.tech_pct || 0.40;
+
+  if (data.role === 'pending') { showScreen('pending'); return; }
+  if (data.role === 'suspended') { showScreen('suspended'); return; }
+
+  // active or admin
+  await loadData();
+  showScreen('list');
+  if (data.role === 'admin') {
+    document.getElementById('admin-btn').style.display = 'flex';
+  }
+}
+
+function confirmLogout() {
+  if (confirm('Выйти из аккаунта?')) sb.auth.signOut();
+}
+
+// ═══════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════
+async function loadData() {
+  // Загружаем apiKey из localStorage
+  state.apiKey = localStorage.getItem('trc_apikey_' + currentUser.id) || '';
+
+  // Загружаем компании
+  const { data: companies } = await sb.from('companies')
+    .select('*').eq('user_id', currentUser.id).order('sort_order');
+  
+  if (!companies || companies.length === 0) {
+    // Вставляем дефолтные компании
+    const { error } = await sb.rpc('insert_default_companies', { p_user_id: currentUser.id });
+    if (!error) {
+      const { data: c2 } = await sb.from('companies')
+        .select('*').eq('user_id', currentUser.id).order('sort_order');
+      state.companies = c2 || [];
+    }
+  } else {
+    state.companies = companies;
+  }
+
+  // Загружаем джобы
+  const { data: jobs } = await sb.from('jobs')
+    .select('*').eq('user_id', currentUser.id).order('job_date', { ascending: false });
+  state.jobs = jobs || [];
 }
 
 // ═══════════════════════════════════════
@@ -460,653 +515,576 @@ function save() {
 // ═══════════════════════════════════════
 function calcPayout(job, company) {
   if (!company) return { subtotal:0, leadCommission:0, netProfitPool:0, pavloProfit:0 };
-  const services    = Number(job.servicesPrice)      || 0;
-  const partsClient = Number(job.partsClientPrice)   || 0;
-  const partsBuy    = Number(job.partsPurchasePrice) || 0;
-  const subtotal       = services + partsClient;
-  const leadCommission = subtotal * company.commissionPct;
-  const netProfitPool  = subtotal - leadCommission - partsBuy;
-  const pavloProfit    = netProfitPool * state.techPct;
+  const services = Number(job.services_price||job.servicesPrice) || 0;
+  const partsClient = Number(job.parts_client_price||job.partsClientPrice) || 0;
+  const partsBuy = Number(job.parts_purchase_price||job.partsPurchasePrice) || 0;
+  const subtotal = services + partsClient;
+  const leadCommission = subtotal * company.commission_pct;
+  const netProfitPool = subtotal - leadCommission - partsBuy;
+  const pavloProfit = netProfitPool * state.techPct;
   return { subtotal, leadCommission, netProfitPool, pavloProfit };
 }
 
 function fmt(n) {
-  if (n == null || isNaN(n)) return "—";
-  const abs = Math.abs(n);
-  const s = "$" + abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (n==null||isNaN(n)) return '—';
+  const s = '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return n < 0 ? `(${s})` : s;
 }
-function fmtPct(n) { return (Number(n)*100).toFixed(2) + "%"; }
+function fmtPct(n) { return (Number(n)*100).toFixed(2) + '%'; }
 
 // ═══════════════════════════════════════
 // ROUTING
 // ═══════════════════════════════════════
 function showScreen(name) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  const el = document.getElementById("screen-" + name);
-  if (el) { el.classList.add("active"); window.scrollTo(0,0); }
-  if (name === "list") renderList();
-  if (name === "settings") renderSettings();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name)?.classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'list') renderList();
+  if (name === 'settings') renderSettings();
+  if (name === 'admin') loadAdminUsers();
 }
 
-function showApiKeyScreen() {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("screen-apikey").style.display = "flex";
-  document.getElementById("apikey-input").value = state.apiKey;
+// ═══════════════════════════════════════
+// LIST
+// ═══════════════════════════════════════
+function renderList() {
+  const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
+  const T = state.jobs.reduce((a,j) => {
+    const p = calcPayout(j, byId[j.company_id]);
+    return { sub:a.sub+p.subtotal, comm:a.comm+p.leadCommission, buy:a.buy+(Number(j.parts_purchase_price)||0), pool:a.pool+p.netProfitPool, pavlo:a.pavlo+p.pavloProfit };
+  }, { sub:0, comm:0, buy:0, pool:0, pavlo:0 });
+
+  const techPct = Math.round(state.techPct*100);
+  document.getElementById('summary-card').innerHTML = `
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.5);margin-bottom:4px">Моя выплата</div>
+    <div class="summary-amount ${T.pavlo>=0?'green':''}">${fmt(T.pavlo)}</div>
+    <div class="summary-rows">
+      <div class="summary-row"><span class="lbl">Subtotal</span><span class="val">${fmt(T.sub)}</span></div>
+      <div class="summary-row neg"><span class="lbl">− Комиссии</span><span class="val">${fmt(T.comm)}</span></div>
+      <div class="summary-row neg"><span class="lbl">− Закупка з/ч</span><span class="val">${fmt(T.buy)}</span></div>
+      <div class="summary-row bold"><span class="lbl">= Net Profit Pool</span><span class="val">${fmt(T.pool)}</span></div>
+      <div class="summary-row accent"><span class="lbl">× ${techPct}% = Мне</span><span class="val">${fmt(T.pavlo)}</span></div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px">${state.jobs.length} джоб${state.jobs.length===1?'':state.jobs.length<5?'а':'ов'}</div>
+  `;
+
+  if (state.jobs.length === 0) {
+    document.getElementById('jobs-list').innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Нет джобов. Нажми + чтобы добавить.</div></div>`;
+    return;
+  }
+
+  document.getElementById('jobs-list').innerHTML = state.jobs.map(j => {
+    const c = byId[j.company_id];
+    const p = calcPayout(j, c);
+    return `<div class="job-item" onclick="openForm(${JSON.stringify(j).replace(/"/g,'&quot;')})">
+      <div class="job-header">
+        <div style="flex:1;min-width:0">
+          <div class="job-meta">📅 ${j.job_date||'—'}${j.job_id?` · #${j.job_id}`:''}</div>
+          <div class="job-name">${j.client_name||'Без имени'}</div>
+          <div class="job-source">🏢 ${c?c.name+` (${fmtPct(c.commission_pct)})`:"<span style='color:var(--red)'>нет компании</span>"}</div>
+          ${j.services_description?`<div class="job-desc">${j.services_description}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <div style="font-size:11px;color:var(--muted)">Мне</div>
+          <div class="job-amount ${p.pavloProfit<0?'red':''}">${fmt(p.pavloProfit)}</div>
+          <button class="delete-btn" onclick="event.stopPropagation();deleteJob('${j.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="job-footer">
+        <div><div class="job-cell-label">Услуги</div><div class="job-cell-val">${fmt(j.services_price)}</div></div>
+        <div><div class="job-cell-label">З/ч клиент</div><div class="job-cell-val">${fmt(j.parts_client_price)}</div></div>
+        <div><div class="job-cell-label">З/ч закупка</div><div class="job-cell-val yellow">${fmt(j.parts_purchase_price)}</div></div>
+        <div><div class="job-cell-label">Net Pool</div><div class="job-cell-val">${fmt(p.netProfitPool)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function init() {
-  if (!state.apiKey) {
-    showApiKeyScreen();
+async function deleteJob(id) {
+  if (!confirm('Удалить джоб?')) return;
+  // Удаляем вложения из storage
+  const { data: atts } = await sb.from('attachments').select('storage_path').eq('job_id', id);
+  if (atts?.length) {
+    await sb.storage.from('screenshots').remove(atts.map(a => a.storage_path));
+  }
+  await sb.from('jobs').delete().eq('id', id);
+  state.jobs = state.jobs.filter(j => j.id !== id);
+  renderList();
+}
+
+// ═══════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════
+function openForm(job) {
+  state.editingJobId = job ? job.id : null;
+  pendingFiles = { hcp:[], invoice:[] };
+  document.getElementById('form-title').textContent = job ? 'Редактировать' : 'Новый джоб';
+  document.getElementById('form-notice').style.display = 'none';
+  document.getElementById('attached-files').style.display = 'none';
+  document.getElementById('screenshots-text').textContent = 'Фото / скриншот карточки HCP';
+  document.getElementById('invoice-text').textContent = 'Загрузить инвойс';
+
+  const sel = document.getElementById('f-companyId');
+  sel.innerHTML = '<option value="">— выбрать —</option>' +
+    state.companies.map(c => `<option value="${c.id}">${c.name} (${fmtPct(c.commission_pct)})</option>`).join('');
+
+  if (job) {
+    sf('f-jobId', job.job_id||'');
+    sf('f-jobDate', job.job_date||today());
+    sf('f-clientName', job.client_name||'');
+    sf('f-companyId', job.company_id||'');
+    sf('f-servicesDescription', job.services_description||'');
+    sf('f-servicesPrice', job.services_price||'');
+    sf('f-partsClientPrice', job.parts_client_price||'');
+    sf('f-partsPurchasePrice', job.parts_purchase_price||'');
+    sf('f-notes', job.notes||'');
+    loadAttachments(job.id);
   } else {
-    document.getElementById("screen-apikey").style.display = "none";
-    showScreen("list");
+    ['f-jobId','f-clientName','f-servicesDescription','f-servicesPrice','f-partsClientPrice','f-partsPurchasePrice','f-notes'].forEach(id => sf(id,''));
+    sf('f-jobDate', today());
+    sf('f-companyId', state.companies[0]?.id||'');
   }
+  updateCalc();
+  showScreen('form');
+}
+
+function sf(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+function gf(id) { return document.getElementById(id)?.value||''; }
+function today() { return new Date().toISOString().slice(0,10); }
+
+async function loadAttachments(jobId) {
+  const { data } = await sb.from('attachments').select('*').eq('job_id', jobId);
+  if (!data?.length) return;
+  renderAttachments(data.map(a => ({ ...a, isSaved: true })));
+}
+
+function renderAttachments(items) {
+  const container = document.getElementById('attached-files');
+  if (!items.length) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div class="card-label">Прикреплённые файлы (${items.length})</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${items.map((item,i) => {
+        const name = item.isSaved ? item.file_name : item.file.name;
+        const kind = item.kind;
+        const kindLabel = kind === 'hcp' ? 'HCP' : 'Инвойс';
+        const kindColor = kind === 'hcp' ? '#6b7280' : '#b45309';
+        const isPdf = name?.endsWith('.pdf');
+        const icon = isPdf ? '📄' : '🖼';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8f7f4;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:20px">${icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name||'Файл'}</div>
+            <div style="font-size:11px;color:${kindColor}">${kindLabel}${item.isSaved?'':' · не сохранён'}</div>
+          </div>
+          ${item.isSaved
+            ? `<button class="btn btn-icon" style="padding:6px" onclick="viewSavedFile('${item.storage_path}')">👁</button>
+               <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="deleteSavedFile('${item.id}','${item.storage_path}')">🗑</button>`
+            : `<button class="btn btn-icon" style="padding:6px" onclick="viewPendingFile('${kind}',${item.pendingIdx})">👁</button>
+               <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="removePendingFile('${kind}',${item.pendingIdx})">🗑</button>`
+          }
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function viewSavedFile(path) {
+  const { data } = await sb.storage.from('screenshots').createSignedUrl(path, 3600);
+  if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+}
+
+async function deleteSavedFile(id, path) {
+  if (!confirm('Удалить файл?')) return;
+  await sb.storage.from('screenshots').remove([path]);
+  await sb.from('attachments').delete().eq('id', id);
+  if (state.editingJobId) loadAttachments(state.editingJobId);
+}
+
+function viewPendingFile(kind, idx) {
+  const f = pendingFiles[kind][idx];
+  if (!f) return;
+  window.open(URL.createObjectURL(f), '_blank');
+}
+
+function removePendingFile(kind, idx) {
+  pendingFiles[kind].splice(idx, 1);
+  refreshPendingAttachments();
+}
+
+function refreshPendingAttachments() {
+  const items = [
+    ...pendingFiles.hcp.map((f,i) => ({ file:f, kind:'hcp', pendingIdx:i, isSaved:false })),
+    ...pendingFiles.invoice.map((f,i) => ({ file:f, kind:'invoice', pendingIdx:i, isSaved:false })),
+  ];
+  renderAttachments(items);
 }
 
 // ═══════════════════════════════════════
-// API KEY
-// ═══════════════════════════════════════
-async function saveApiKey() {
-  const key = document.getElementById("apikey-input").value.trim();
-  if (!key) { showApiKeyError("Введи API Key"); return; }
-  const btn = event.target;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Проверяю…';
-  try {
-    // Тест Gemini API
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents:[{ parts:[{text:"hi"}] }] })
-    });
-    if (resp.status === 400) {
-      // 400 = ключ валиден но запрос неполный — это нормально
-    } else if (resp.status === 403 || resp.status === 401) {
-      showApiKeyError("Неверный ключ. Проверь на aistudio.google.com");
-      return;
-    }
-    state.apiKey = key;
-    localStorage.setItem("trc_apikey", key);
-    document.getElementById("screen-apikey").style.display = "none";
-    showScreen("list");
-  } catch(e) {
-    showApiKeyError("Ошибка: " + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Сохранить и продолжить";
-  }
-}
-
-function showApiKeyError(msg) {
-  const el = document.getElementById("apikey-error");
-  document.getElementById("apikey-error-text").textContent = msg;
-  el.style.display = "flex";
-}
-
-// ═══════════════════════════════════════
-// IMAGE PROCESSING
+// IMAGE RECOGNITION
 // ═══════════════════════════════════════
 async function fileToJpeg(file) {
-  // PDF — отправляем как document
-  if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
-    const data = await readBase64(file);
-    return { type:"document", source:{ type:"base64", media_type:"application/pdf", data } };
+  if (/\.pdf$/i.test(file.name)||file.type==='application/pdf') {
+    const data = await readB64(file);
+    return { type:'document', source:{ type:'base64', media_type:'application/pdf', data } };
   }
-  // Все изображения — через canvas, максимум 600px, качество 0.6
   const maxDim = 600;
   let src;
-  try {
-    src = await createImageBitmap(file);
-  } catch {
-    src = await new Promise((res, rej) => {
+  try { src = await createImageBitmap(file); } catch {
+    src = await new Promise((res,rej) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => { URL.revokeObjectURL(url); res(img); };
-      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("не удалось открыть файл")); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(); };
       img.src = url;
     });
   }
-  let w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
-  if (w > maxDim || h > maxDim) { const s = maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
-  const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#fff"; ctx.fillRect(0,0,w,h); ctx.drawImage(src, 0, 0, w, h);
+  let w = src.width||src.naturalWidth, h = src.height||src.naturalHeight;
+  if (w>maxDim||h>maxDim) { const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+  const canvas = document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(src,0,0,w,h);
   if (src.close) src.close();
-  const data = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
-  return { type:"image", source:{ type:"base64", media_type:"image/jpeg", data } };
+  return { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: canvas.toDataURL('image/jpeg',0.6).split(',')[1] } };
 }
 
-function readBase64(file) {
+function readB64(file) {
   return new Promise((res,rej) => {
     const r = new FileReader();
-    r.onload = () => res(r.result.split(",")[1]);
-    r.onerror = () => rej(new Error("ошибка чтения файла"));
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej();
     r.readAsDataURL(file);
   });
 }
 
-// ═══════════════════════════════════════
-// API CALL — напрямую с API ключом
-// ═══════════════════════════════════════
 async function callGemini(parts) {
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0, maxOutputTokens: 1000 }
-      })
-    }
-  );
+  const apiKey = state.apiKey;
+  if (!apiKey) throw new Error('Нет Gemini API Key. Добавь в Настройках.');
+  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{parts}], generationConfig:{ temperature:0, maxOutputTokens:1000 } })
+  });
   const raw = await resp.text();
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${raw.slice(0,400)}`);
-  let d;
-  try { d = JSON.parse(raw); } catch { throw new Error("ответ не JSON: " + raw.slice(0,200)); }
-  if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  if (!text) throw new Error("пустой ответ от Gemini");
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${raw.slice(0,300)}`);
+  const d = JSON.parse(raw);
+  if (d.error) throw new Error(d.error.message);
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  if (!text) throw new Error('Пустой ответ от Gemini');
   return text;
 }
 
 function extractJson(text) {
-  const t = text.replace(/```json/gi,"").replace(/```/g,"").trim();
-  const s = t.indexOf("{"), e = t.lastIndexOf("}");
-  if (s === -1 || e <= s) throw new Error("нет JSON в ответе: " + text.slice(0,200));
-  return JSON.parse(t.slice(s, e+1));
+  const t = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const s=t.indexOf('{'), e=t.lastIndexOf('}');
+  if (s===-1||e<=s) throw new Error('Нет JSON: '+text.slice(0,100));
+  return JSON.parse(t.slice(s,e+1));
 }
 
-// ═══════════════════════════════════════
-// ANALYZE IMAGES
-// ═══════════════════════════════════════
 const JOB_PROMPT = `Extract from HouseCall Pro job card screenshot. Return JSON only:
 {"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null}
-servicesPrice=sum of Labor/Service lines. partsClientPrice=sum of Parts/Materials lines. Numbers only, no $.`;
+Numbers only, no $`;
 
 const INV_PROMPT = `Extract from parts purchase invoice. Return JSON only:
-{"partsPurchasePrice":number|null,"supplier":string|null,"invoiceDate":"YYYY-MM-DD"|null}
-partsPurchasePrice=subtotal before tax if shown separately, else total. Number only, no $.`;
-
-const SYSTEM = "Data extraction tool. Respond ONLY with a single valid JSON object. No prose, no markdown.";
+{"partsPurchasePrice":number|null,"supplier":string|null}
+Number only, no $`;
 
 async function analyzeFiles(files, mode) {
   let merged = {};
-  const prompt = mode === "invoice" ? INV_PROMPT : JOB_PROMPT;
   for (const file of files) {
     const content = await fileToJpeg(file);
-    // Gemini формат: parts = [{inlineData: ...}, {text: ...}]
     const parts = [];
-    if (content.type === "document") {
-      parts.push({ inlineData: { mimeType: "application/pdf", data: content.source.data } });
-    } else {
-      parts.push({ inlineData: { mimeType: "image/jpeg", data: content.source.data } });
-    }
-    parts.push({ text: prompt });
+    if (content.type==='document') parts.push({ inlineData:{ mimeType:'application/pdf', data:content.source.data } });
+    else parts.push({ inlineData:{ mimeType:'image/jpeg', data:content.source.data } });
+    parts.push({ text: mode==='invoice'?INV_PROMPT:JOB_PROMPT });
     const text = await callGemini(parts);
     const parsed = extractJson(text);
     for (const [k,v] of Object.entries(parsed)) {
-      if (v !== null && v !== undefined && merged[k] == null) merged[k] = v;
+      if (v!==null&&v!==undefined&&merged[k]==null) merged[k]=v;
     }
   }
   return merged;
 }
 
-// ═══════════════════════════════════════
-// FORM HANDLERS
-// ═══════════════════════════════════════
 async function handleScreenshots(input) {
-  const files = Array.from(input.files || []);
+  const files = Array.from(input.files||[]);
   if (!files.length) return;
-  const textEl = document.getElementById("screenshots-text");
+  const textEl = document.getElementById('screenshots-text');
   textEl.innerHTML = '<span class="spinner dark"></span> Распознаю…';
   hideNotice();
   try {
-    const data = await analyzeFiles(files, "job");
-    if (data.clientName)           setField("f-clientName", data.clientName);
-    if (data.jobDate)              setField("f-jobDate", data.jobDate);
-    if (data.jobId)                setField("f-jobId", data.jobId);
-    if (data.servicesDescription)  setField("f-servicesDescription", data.servicesDescription);
-    if (data.servicesPrice != null) setField("f-servicesPrice", data.servicesPrice);
-    if (data.partsClientPrice != null) setField("f-partsClientPrice", data.partsClientPrice);
+    const data = await analyzeFiles(files, 'job');
+    if (data.clientName) sf('f-clientName', data.clientName);
+    if (data.jobDate) sf('f-jobDate', data.jobDate);
+    if (data.jobId) sf('f-jobId', data.jobId);
+    if (data.servicesDescription) sf('f-servicesDescription', data.servicesDescription);
+    if (data.servicesPrice!=null) sf('f-servicesPrice', data.servicesPrice);
+    if (data.partsClientPrice!=null) sf('f-partsClientPrice', data.partsClientPrice);
     if (data.leadSource) {
-      const match = state.companies.find(c => c.name.toLowerCase().includes(data.leadSource.toLowerCase()) || data.leadSource.toLowerCase().includes(c.name.toLowerCase().split(" ")[0]));
-      if (match) setField("f-companyId", match.id);
+      const match = state.companies.find(c =>
+        c.name.toLowerCase().includes(data.leadSource.toLowerCase()) ||
+        data.leadSource.toLowerCase().includes(c.name.toLowerCase().split(' ')[0])
+      );
+      if (match) sf('f-companyId', match.id);
     }
-    // Сохраняем файлы во временное хранилище (привязка к джобу при сохранении)
     pendingFiles.hcp.push(...files);
-    updateCalc();
-    await renderAttachedFiles();
-    showNotice("success", "Распознано ✓" + (data.leadSource ? ` — Lead Source: ${data.leadSource}` : ""));
-    textEl.textContent = `✓ ${files.length} файл${files.length>1?"а":""} загружено (распознано)`;
+    updateCalc(); refreshPendingAttachments();
+    showNotice('success', '✅ Распознано' + (data.leadSource ? ` — Lead Source: ${data.leadSource}` : ''));
+    textEl.textContent = `✓ ${files.length} файл${files.length>1?'а':''} загружено`;
   } catch(e) {
-    // Даже если распознавание не удалось — всё равно сохраняем файл как вложение
     pendingFiles.hcp.push(...files);
-    await renderAttachedFiles();
-    showNotice("error", "Распознавание не удалось, но файлы сохранены как вложения:\n" + (e.message || String(e)));
-    textEl.textContent = "Фото / скриншот карточки HCP";
+    refreshPendingAttachments();
+    showNotice('error', e.message||String(e));
+    textEl.textContent = 'Фото / скриншот карточки HCP';
   }
-  input.value = "";
+  input.value = '';
 }
 
 async function handleInvoice(input) {
-  const files = Array.from(input.files || []);
+  const files = Array.from(input.files||[]);
   if (!files.length) return;
-  const textEl = document.getElementById("invoice-text");
+  const textEl = document.getElementById('invoice-text');
   textEl.innerHTML = '<span class="spinner dark"></span> Распознаю…';
   hideNotice();
   try {
-    const data = await analyzeFiles(files, "invoice");
-    if (data.partsPurchasePrice != null) setField("f-partsPurchasePrice", data.partsPurchasePrice);
+    const data = await analyzeFiles(files, 'invoice');
+    if (data.partsPurchasePrice!=null) sf('f-partsPurchasePrice', data.partsPurchasePrice);
     pendingFiles.invoice.push(...files);
-    updateCalc();
-    await renderAttachedFiles();
-    showNotice("success", "Инвойс распознан ✓" + (data.supplier ? ` — ${data.supplier}` : ""));
-    textEl.textContent = `✓ Инвойс загружен${data.supplier ? " (" + data.supplier + ")" : ""}`;
+    updateCalc(); refreshPendingAttachments();
+    showNotice('success', '✅ Инвойс распознан' + (data.supplier?` — ${data.supplier}`:''));
+    textEl.textContent = '✓ Инвойс загружен';
   } catch(e) {
     pendingFiles.invoice.push(...files);
-    await renderAttachedFiles();
-    showNotice("error", "Распознавание не удалось, но файл сохранён как вложение:\n" + (e.message || String(e)));
-    textEl.textContent = "Загрузить инвойс";
+    refreshPendingAttachments();
+    showNotice('error', e.message||String(e));
+    textEl.textContent = 'Загрузить инвойс';
   }
-  input.value = "";
-}
-
-function setField(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = val;
-}
-
-async function renderAttachedFiles() {
-  const container = document.getElementById("attached-files");
-  if (!container) return;
-  
-  const items = [];
-  
-  // Файлы, ещё не сохранённые в БД (новый джоб или добавленные при редактировании)
-  pendingFiles.hcp.forEach((f, i) => {
-    items.push({ pending: true, kind: "hcp", file: f, idx: i });
-  });
-  pendingFiles.invoice.forEach((f, i) => {
-    items.push({ pending: true, kind: "invoice", file: f, idx: i });
-  });
-  
-  // Файлы уже сохранённые (при редактировании существующего джоба)
-  if (state.editingJobId) {
-    const saved = await getScreenshotsForJob(state.editingJobId);
-    saved.forEach(s => items.push({ pending: false, ...s }));
-  }
-  
-  if (items.length === 0) {
-    container.innerHTML = "";
-    container.style.display = "none";
-    return;
-  }
-  
-  container.style.display = "block";
-  container.innerHTML = `
-    <div class="card-label">Прикреплённые файлы (${items.length})</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${items.map((item, i) => {
-        const name = item.pending ? item.file.name : item.name;
-        const type = item.pending ? item.file.type : item.type;
-        const isImage = type && type.startsWith("image");
-        const isPdf = type === "application/pdf" || (name && name.endsWith(".pdf"));
-        const icon = isImage ? "🖼" : (isPdf ? "📄" : "📎");
-        const kindLabel = item.kind === "hcp" ? "HCP" : "Инвойс";
-        const kindColor = item.kind === "hcp" ? "#6b7280" : "#b45309";
-        return `
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8f7f4;border-radius:8px;border:1px solid var(--border)">
-            <div style="font-size:20px">${icon}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name || "Без названия"}</div>
-              <div style="font-size:11px;color:${kindColor}">${kindLabel}${item.pending ? " · не сохранён" : ""}</div>
-            </div>
-            <button class="btn btn-icon" style="padding:6px;font-size:14px" onclick="openAttachment(${item.pending ? `'pending','${item.kind}',${item.idx}` : `'saved',${item.id},null`})">👁</button>
-            <button class="btn btn-icon" style="padding:6px;font-size:14px;color:var(--red)" onclick="removeAttachment(${item.pending ? `'pending','${item.kind}',${item.idx}` : `'saved',${item.id},null`})">🗑</button>
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
-}
-
-async function openAttachment(source, a, b) {
-  let blob, name, type;
-  if (source === "pending") {
-    const f = pendingFiles[a][b];
-    blob = f;
-    name = f.name;
-    type = f.type;
-  } else {
-    const db = await openDB();
-    const rec = await new Promise((res, rej) => {
-      const req = db.transaction(STORE_SCREENSHOTS).objectStore(STORE_SCREENSHOTS).get(a);
-      req.onsuccess = () => res(req.result);
-      req.onerror = () => rej(req.error);
-    });
-    if (!rec) return;
-    blob = rec.blob;
-    name = rec.name;
-    type = rec.type;
-  }
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
-
-async function removeAttachment(source, a, b) {
-  if (!confirm("Удалить этот файл?")) return;
-  if (source === "pending") {
-    pendingFiles[a].splice(b, 1);
-  } else {
-    await deleteScreenshot(a);
-  }
-  await renderAttachedFiles();
+  input.value = '';
 }
 
 function showNotice(type, text) {
-  const el = document.getElementById("form-notice");
-  const icon = type === "success" ? "✅" : "⚠️";
-  const isLong = text.length > 80;
+  const el = document.getElementById('form-notice');
+  const isLong = text.length > 60;
   el.innerHTML = `<div class="notice ${type}">
-    <div class="notice-icon">${icon}</div>
-    <div class="notice-body">
-      ${isLong ? `<div class="notice-title">${type === "error" ? "Ошибка" : "Готово"}</div><div class="notice-text">${text}</div><span class="notice-copy" onclick="navigator.clipboard?.writeText(this.previousElementSibling.textContent)">Скопировать</span>` : text}
-    </div>
+    <div class="notice-icon">${type==='success'?'✅':'⚠️'}</div>
+    <div class="notice-body">${isLong?`<div class="notice-title">${type==='error'?'Ошибка':'OK'}</div><div class="notice-text">${text}</div>`:text}</div>
   </div>`;
-  el.style.display = "block";
+  el.style.display = 'block';
 }
-function hideNotice() {
-  document.getElementById("form-notice").style.display = "none";
-}
+function hideNotice() { document.getElementById('form-notice').style.display='none'; }
 
 function updateCalc() {
-  const companyId = document.getElementById("f-companyId")?.value;
-  const company = state.companies.find(c => c.id === companyId);
+  const companyId = gf('f-companyId');
+  const company = state.companies.find(c => c.id===companyId);
   const job = {
-    servicesPrice:      parseFloat(document.getElementById("f-servicesPrice")?.value) || 0,
-    partsClientPrice:   parseFloat(document.getElementById("f-partsClientPrice")?.value) || 0,
-    partsPurchasePrice: parseFloat(document.getElementById("f-partsPurchasePrice")?.value) || 0,
+    services_price: parseFloat(gf('f-servicesPrice'))||0,
+    parts_client_price: parseFloat(gf('f-partsClientPrice'))||0,
+    parts_purchase_price: parseFloat(gf('f-partsPurchasePrice'))||0,
   };
   const p = calcPayout(job, company);
-
-  const pct = company ? fmtPct(company.commissionPct) : "—%";
-  const techPct = Math.round(state.techPct * 100);
-
-  document.getElementById("calc-rows").innerHTML = `
-    <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmt(job.servicesPrice)}</span></div>
-    <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmt(job.partsClientPrice)}</span></div>
+  const pct = company ? fmtPct(company.commission_pct) : '—%';
+  const techPct = Math.round(state.techPct*100);
+  document.getElementById('calc-rows').innerHTML = `
+    <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmt(job.services_price)}</span></div>
+    <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmt(job.parts_client_price)}</span></div>
     <div class="calc-divider"></div>
     <div class="calc-row bold"><span class="cl">= Subtotal</span><span class="cv">${fmt(p.subtotal)}</span></div>
     <div class="calc-row neg"><span class="cl">− Lead Commission (${pct})</span><span class="cv">${fmt(p.leadCommission)}</span></div>
-    <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmt(job.partsPurchasePrice)}</span></div>
+    <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmt(job.parts_purchase_price)}</span></div>
     <div class="calc-divider"></div>
     <div class="calc-row bold"><span class="cl">= Net Profit Pool</span><span class="cv">${fmt(p.netProfitPool)}</span></div>
-    <div class="calc-row"><span class="cl">× ${techPct}% (моя доля)</span><span class="cv">${fmt(p.pavloProfit)}</span></div>
-  `;
-
-  const totalEl = document.getElementById("calc-total");
-  totalEl.textContent = fmt(p.pavloProfit);
-  totalEl.className = "calc-total-val " + (p.pavloProfit >= 0 ? "green" : "red");
+    <div class="calc-row"><span class="cl">× ${techPct}% (моя доля)</span><span class="cv">${fmt(p.pavloProfit)}</span></div>`;
+  const el = document.getElementById('calc-total');
+  el.textContent = fmt(p.pavloProfit);
+  el.className = 'calc-total-val ' + (p.pavloProfit>=0?'green':'red');
 }
 
 function toggleCalc() {
-  const body = document.getElementById("calc-body");
-  const chevron = document.getElementById("calc-chevron");
-  body.classList.toggle("open");
-  chevron.classList.toggle("open");
+  document.getElementById('calc-body').classList.toggle('open');
+  document.getElementById('calc-chevron').classList.toggle('open');
 }
-
-// ═══════════════════════════════════════
-// FORM OPEN/SAVE
-// ═══════════════════════════════════════
-function openForm(job) {
-  state.editingJobId = job ? job.id : null;
-  pendingFiles = { hcp: [], invoice: [] };
-  document.getElementById("form-title").textContent = job ? "Редактировать" : "Новый джоб";
-  hideNotice();
-  document.getElementById("screenshots-text").textContent = "Фото / скриншот карточки HCP";
-  document.getElementById("invoice-text").textContent = "Загрузить инвойс";
-
-  // Populate select
-  const sel = document.getElementById("f-companyId");
-  sel.innerHTML = '<option value="">— выбрать —</option>' +
-    state.companies.map(c => `<option value="${c.id}">${c.name} (${fmtPct(c.commissionPct)})</option>`).join("");
-
-  if (job) {
-    setField("f-jobId", job.jobId || "");
-    setField("f-jobDate", job.jobDate || today());
-    setField("f-clientName", job.clientName || "");
-    setField("f-companyId", job.companyId || "");
-    setField("f-servicesDescription", job.servicesDescription || "");
-    setField("f-servicesPrice", job.servicesPrice || "");
-    setField("f-partsClientPrice", job.partsClientPrice || "");
-    setField("f-partsPurchasePrice", job.partsPurchasePrice || "");
-    setField("f-notes", job.notes || "");
-  } else {
-    ["f-jobId","f-clientName","f-servicesDescription","f-servicesPrice","f-partsClientPrice","f-partsPurchasePrice","f-notes"].forEach(id => setField(id, ""));
-    setField("f-jobDate", today());
-    setField("f-companyId", state.companies[0]?.id || "");
-  }
-  updateCalc();
-  renderAttachedFiles();
-  showScreen("form");
-}
-
-function today() { return new Date().toISOString().slice(0,10); }
 
 async function saveJob() {
-  const companyId = document.getElementById("f-companyId").value;
-  if (!companyId) { showNotice("error", "Выбери поставщика заказа (Lead Source)"); return; }
+  const companyId = gf('f-companyId');
+  if (!companyId) { showNotice('error','Выбери поставщика заказа'); return; }
 
-  const job = {
-    id: state.editingJobId || "j_" + Date.now(),
-    jobId: document.getElementById("f-jobId").value.trim(),
-    jobDate: document.getElementById("f-jobDate").value,
-    clientName: document.getElementById("f-clientName").value.trim(),
-    companyId,
-    servicesDescription: document.getElementById("f-servicesDescription").value.trim(),
-    servicesPrice:       parseFloat(document.getElementById("f-servicesPrice").value) || 0,
-    partsClientPrice:    parseFloat(document.getElementById("f-partsClientPrice").value) || 0,
-    partsPurchasePrice:  parseFloat(document.getElementById("f-partsPurchasePrice").value) || 0,
-    notes: document.getElementById("f-notes").value.trim(),
-  };
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Сохраняю…';
 
-  if (state.editingJobId) {
-    state.jobs = state.jobs.map(j => j.id === state.editingJobId ? job : j);
-  } else {
-    state.jobs.unshift(job);
-  }
-  
-  // Сохраняем прикреплённые файлы в IndexedDB с привязкой к jobId
   try {
-    for (const f of pendingFiles.hcp) {
-      await saveScreenshot(job.id, f, "hcp");
+    const jobData = {
+      user_id: currentUser.id,
+      job_id: gf('f-jobId').trim(),
+      job_date: gf('f-jobDate')||null,
+      client_name: gf('f-clientName').trim(),
+      company_id: companyId,
+      services_description: gf('f-servicesDescription').trim(),
+      services_price: parseFloat(gf('f-servicesPrice'))||0,
+      parts_client_price: parseFloat(gf('f-partsClientPrice'))||0,
+      parts_purchase_price: parseFloat(gf('f-partsPurchasePrice'))||0,
+      notes: gf('f-notes').trim(),
+    };
+
+    let jobId;
+    if (state.editingJobId) {
+      const { error } = await sb.from('jobs').update(jobData).eq('id', state.editingJobId);
+      if (error) throw error;
+      jobId = state.editingJobId;
+    } else {
+      const { data, error } = await sb.from('jobs').insert(jobData).select().single();
+      if (error) throw error;
+      jobId = data.id;
     }
-    for (const f of pendingFiles.invoice) {
-      await saveScreenshot(job.id, f, "invoice");
+
+    // Загружаем вложения
+    for (const file of pendingFiles.hcp) {
+      await uploadFile(file, jobId, 'hcp');
     }
-  } catch (e) {
-    console.error("Не удалось сохранить вложения:", e);
-    alert("Джоб сохранён, но вложения не удалось записать: " + e.message);
+    for (const file of pendingFiles.invoice) {
+      await uploadFile(file, jobId, 'invoice');
+    }
+
+    // Обновляем state
+    await loadData();
+    pendingFiles = { hcp:[], invoice:[] };
+    showScreen('list');
+  } catch(e) {
+    showNotice('error', e.message||String(e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Сохранить';
   }
-  
-  pendingFiles = { hcp: [], invoice: [] };
-  save();
-  showScreen("list");
 }
 
-// ═══════════════════════════════════════
-// LIST RENDER
-// ═══════════════════════════════════════
-function renderList() {
-  const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
-  const T = state.jobs.reduce((a,j) => {
-    const p = calcPayout(j, byId[j.companyId]);
-    return { sub:a.sub+p.subtotal, comm:a.comm+p.leadCommission, buy:a.buy+(j.partsPurchasePrice||0), pool:a.pool+p.netProfitPool, pavlo:a.pavlo+p.pavloProfit };
-  }, { sub:0, comm:0, buy:0, pool:0, pavlo:0 });
-
-  const techPct = Math.round(state.techPct*100);
-  document.getElementById("summary-card").innerHTML = `
-    <div class="summary-label">Моя выплата</div>
-    <div class="summary-amount ${T.pavlo >= 0 ? "green" : ""}">${fmt(T.pavlo)}</div>
-    <div class="summary-rows">
-      <div class="summary-row"><span class="lbl">Subtotal (выручка)</span><span class="val">${fmt(T.sub)}</span></div>
-      <div class="summary-row neg"><span class="lbl">− Комиссии поставщиков</span><span class="val">${fmt(T.comm)}</span></div>
-      <div class="summary-row neg"><span class="lbl">− Закупка з/ч</span><span class="val">${fmt(T.buy)}</span></div>
-      <div class="summary-row bold"><span class="lbl">= Net Profit Pool</span><span class="val">${fmt(T.pool)}</span></div>
-      <div class="summary-row accent"><span class="lbl">× ${techPct}% = Мне</span><span class="val">${fmt(T.pavlo)}</span></div>
-    </div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px">${state.jobs.length} джоб${state.jobs.length===1?"":state.jobs.length<5?"а":"ов"}</div>
-  `;
-
-  if (state.jobs.length === 0) {
-    document.getElementById("jobs-list").innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Нет джобов. Нажми + чтобы добавить.</div></div>`;
-    return;
+async function uploadFile(file, jobId, kind) {
+  try {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${currentUser.id}/${jobId}/${Date.now()}_${kind}.${ext}`;
+    const { error: uploadError } = await sb.storage.from('screenshots').upload(path, file);
+    if (uploadError) throw uploadError;
+    const { error: dbError } = await sb.from('attachments').insert({
+      job_id: jobId,
+      user_id: currentUser.id,
+      storage_path: path,
+      kind,
+      file_name: file.name,
+      mime_type: file.type,
+    });
+    if (dbError) throw dbError;
+  } catch(e) {
+    console.error('Upload failed:', e);
   }
-
-  document.getElementById("jobs-list").innerHTML = state.jobs.map(j => {
-    const c = byId[j.companyId];
-    const p = calcPayout(j, c);
-    const amtClass = p.pavloProfit < 0 ? "red" : "";
-    return `<div class="job-item" onclick="openForm(${JSON.stringify(j).replace(/"/g,'&quot;')})">
-      <div class="job-header">
-        <div style="flex:1;min-width:0">
-          <div class="job-meta">📅 ${j.jobDate||"—"}${j.jobId?` · #${j.jobId}`:""} <span id="attach-${j.id}" style="margin-left:6px"></span></div>
-          <div class="job-name">${j.clientName||"Без имени"}</div>
-          <div class="job-source">🏢 ${c?c.name+` (${fmtPct(c.commissionPct)})`:"<span style='color:var(--red)'>нет компании</span>"}</div>
-          ${j.servicesDescription?`<div class="job-desc">${j.servicesDescription}</div>`:""}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-          <div style="font-size:11px;color:var(--muted)">Мне</div>
-          <div class="job-amount ${amtClass}">${fmt(p.pavloProfit)}</div>
-          <button class="delete-btn" onclick="event.stopPropagation();deleteJob('${j.id}')">🗑</button>
-        </div>
-      </div>
-      <div class="job-footer">
-        <div><div class="job-cell-label">Услуги</div><div class="job-cell-val">${fmt(j.servicesPrice)}</div></div>
-        <div><div class="job-cell-label">З/ч клиент</div><div class="job-cell-val">${fmt(j.partsClientPrice)}</div></div>
-        <div><div class="job-cell-label">З/ч закупка</div><div class="job-cell-val yellow">${fmt(j.partsPurchasePrice)}</div></div>
-        <div><div class="job-cell-label">Net Pool</div><div class="job-cell-val">${fmt(p.netProfitPool)}</div></div>
-      </div>
-    </div>`;
-  }).join("");
-
-  // Асинхронно подгружаем индикаторы вложений
-  state.jobs.forEach(async j => {
-    const attachments = await getScreenshotsForJob(j.id);
-    if (attachments.length) {
-      const el = document.getElementById(`attach-${j.id}`);
-      if (el) el.innerHTML = `📎 ${attachments.length}`;
-    }
-  });
-}
-
-async function deleteJob(id) {
-  if (!confirm("Удалить этот джоб? (Вложенные файлы тоже будут удалены)")) return;
-  state.jobs = state.jobs.filter(j => j.id !== id);
-  await deleteScreenshotsForJob(id);
-  save();
-  renderList();
 }
 
 // ═══════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════
 function renderSettings() {
-  document.getElementById("tech-pct-input").value = Math.round(state.techPct * 100);
-  document.getElementById("companies-list").innerHTML = state.companies.map((c,i) => `
-    <div class="card" id="co-card-${c.id}">
+  document.getElementById('tech-pct-input').value = Math.round(state.techPct*100);
+  document.getElementById('settings-pct-label').textContent = Math.round(state.techPct*100) + '%';
+  document.getElementById('settings-apikey').value = state.apiKey;
+
+  document.getElementById('companies-list').innerHTML = state.companies.map(c => `
+    <div class="card">
       <div class="co-item">
         <div style="flex:1;cursor:pointer" onclick="editCompany('${c.id}')">
           <div class="co-name">${c.name}</div>
-          <div class="co-pct">${fmtPct(c.commissionPct)}</div>
-          ${c.notes?`<div class="co-notes">${c.notes}</div>`:""}
+          <div class="co-pct">${fmtPct(c.commission_pct)}</div>
+          ${c.notes?`<div class="co-notes">${c.notes}</div>`:''}
         </div>
-        <div class="co-actions">
+        <div style="display:flex">
           <button class="btn btn-icon" onclick="editCompany('${c.id}')">✏️</button>
           <button class="btn btn-icon" onclick="deleteCompany('${c.id}')">🗑</button>
         </div>
       </div>
-    </div>
-  `).join("");
+    </div>`).join('');
 }
 
-function editCompany(id) {
-  const c = state.companies.find(x => x.id === id);
-  if (!c) return;
-  const name = prompt("Название:", c.name); if (!name) return;
-  const pct = prompt(`Commission % (сейчас ${fmtPct(c.commissionPct)}):`, (c.commissionPct*100).toFixed(4)); if (!pct) return;
-  const notes = prompt("Заметки:", c.notes || "");
-  c.name = name.trim();
-  c.commissionPct = parseFloat(pct) / 100;
-  c.notes = notes || "";
-  save();
-  renderSettings();
-}
-
-function deleteCompany(id) {
-  if (!confirm("Удалить поставщика?")) return;
-  state.companies = state.companies.filter(c => c.id !== id);
-  save();
-  renderSettings();
-}
-
-function addCompany() {
-  const name = prompt("Название компании:"); if (!name) return;
-  const pct = prompt("Commission % (например 25):"); if (!pct) return;
-  const notes = prompt("Заметки (необязательно):") || "";
-  state.companies.push({ id:"c_"+Date.now(), name:name.trim(), commissionPct:parseFloat(pct)/100, notes });
-  save();
-  renderSettings();
-}
-
-function saveSettings() {
-  const pct = parseInt(document.getElementById("tech-pct-input").value) || 40;
+async function saveSettings() {
+  const pct = parseInt(document.getElementById('tech-pct-input').value)||40;
   state.techPct = Math.min(100, Math.max(1, pct)) / 100;
-  save();
-  showScreen("list");
+  const apiKey = document.getElementById('settings-apikey').value.trim();
+  state.apiKey = apiKey;
+  localStorage.setItem('trc_apikey_'+currentUser.id, apiKey);
+  await sb.from('profiles').update({ tech_pct: state.techPct }).eq('id', currentUser.id);
+  showScreen('list');
+}
+
+async function editCompany(id) {
+  const c = state.companies.find(x => x.id===id);
+  if (!c) return;
+  const name = prompt('Название:', c.name); if (!name) return;
+  const pct = prompt(`Commission % (сейчас ${fmtPct(c.commission_pct)}):`, (c.commission_pct*100).toFixed(4)); if (!pct) return;
+  const notes = prompt('Заметки:', c.notes||'')||'';
+  const { error } = await sb.from('companies').update({
+    name: name.trim(),
+    commission_pct: parseFloat(pct)/100,
+    notes,
+  }).eq('id', id);
+  if (!error) {
+    const co = state.companies.find(x=>x.id===id);
+    if (co) { co.name=name.trim(); co.commission_pct=parseFloat(pct)/100; co.notes=notes; }
+  }
+  renderSettings();
+}
+
+async function deleteCompany(id) {
+  if (!confirm('Удалить поставщика?')) return;
+  await sb.from('companies').delete().eq('id', id);
+  state.companies = state.companies.filter(c=>c.id!==id);
+  renderSettings();
+}
+
+async function addCompany() {
+  const name = prompt('Название компании:'); if (!name) return;
+  const pct = prompt('Commission % (например 25):'); if (!pct) return;
+  const notes = prompt('Заметки (необязательно):')||'';
+  const { data, error } = await sb.from('companies').insert({
+    user_id: currentUser.id,
+    name: name.trim(),
+    commission_pct: parseFloat(pct)/100,
+    notes,
+    sort_order: state.companies.length + 1,
+  }).select().single();
+  if (!error && data) state.companies.push(data);
+  renderSettings();
 }
 
 // ═══════════════════════════════════════
-// EXPORT / IMPORT
+// ADMIN
 // ═══════════════════════════════════════
-function exportData() {
-  const data = JSON.stringify({ companies: state.companies, jobs: state.jobs, techPct: state.techPct }, null, 2);
-  const blob = new Blob([data], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "trc-income-" + today() + ".json"; a.click();
-  URL.revokeObjectURL(url);
+async function loadAdminUsers() {
+  const { data, error } = await sb.from('profiles').select('*').order('created_at');
+  if (error || !data) {
+    document.getElementById('admin-users-list').innerHTML = '<div class="notice error"><div class="notice-icon">⚠️</div><div class="notice-body">Ошибка загрузки</div></div>';
+    return;
+  }
+  const roleBadge = r => `<span class="badge badge-${r}">${r}</span>`;
+  const roleMap = { admin:'admin', active:'active', pending:'pending', suspended:'suspended' };
+
+  document.getElementById('admin-users-list').innerHTML = data.map(u => `
+    <div class="user-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          ${roleBadge(u.role)}
+          <span style="font-size:11px;color:var(--muted)">${u.created_at?.slice(0,10)||''}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        ${u.id === currentUser.id ? '<span style="font-size:11px;color:var(--muted)">Это ты</span>' : `
+          ${u.role !== 'active' ? `<button class="btn btn-green btn-sm" onclick="setUserRole('${u.id}','active')">✓ Одобрить</button>` : ''}
+          ${u.role !== 'suspended' ? `<button class="btn btn-red btn-sm" onclick="setUserRole('${u.id}','suspended')">✕ Блок</button>` : `<button class="btn btn-secondary btn-sm" onclick="setUserRole('${u.id}','active')">↩ Разблок</button>`}
+        `}
+      </div>
+    </div>`).join('');
 }
 
-function importData() { document.getElementById("import-input").click(); }
-
-function doImport(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const d = JSON.parse(e.target.result);
-      if (d.companies) state.companies = d.companies;
-      if (d.jobs) state.jobs = d.jobs;
-      if (d.techPct) state.techPct = d.techPct;
-      save();
-      alert("Данные импортированы!");
-      renderSettings();
-    } catch { alert("Ошибка: неверный формат файла"); }
-  };
-  reader.readAsText(file);
-  input.value = "";
+async function setUserRole(userId, role) {
+  const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
+  if (!error) loadAdminUsers();
 }
-
-// ═══════════════════════════════════════
-// START
-// ═══════════════════════════════════════
-init();
 </script>
 </body>
 </html>
