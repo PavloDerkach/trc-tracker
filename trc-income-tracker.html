@@ -6,152 +6,349 @@
 <title>TRC Income Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+/* ── Design tokens ─────────────────────────────────────── */
 :root {
-  --bg: #f5f4f1; --card: #fff; --border: #e5e2db; --text: #1a1814;
-  --muted: #8a8680; --accent: #1a1814; --green: #1a7a4a; --green-bg: #edf7f1;
-  --red: #b83232; --red-bg: #fdf0f0; --yellow: #f5a623;
-  --yellow-bg: #fffbf0; --yellow-border: #f5d68a; --r: 14px; --rs: 8px;
+  --bg:       #f5f4f1;
+  --card:     #ffffff;
+  --border:   #e5e2db;
+  --text:     #1a1814;
+  --muted:    #8a8680;
+  --accent:   #1a1814;
+  --green:    #1a7a4a;
+  --green-bg: #edf7f1;
+  --red:      #b83232;
+  --red-bg:   #fdf0f0;
+  --yellow:   #f5a623;
+  --yellow-bg:#fffbf0;
+  --yellow-bd:#f5d68a;
+  --blue:     #1d4ed8;
+  --blue-bg:  #eff6ff;
+  --r:  14px;
+  --rs:  8px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.screen { display: none; min-height: 100vh; padding-bottom: 80px; }
+
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Layout ────────────────────────────────────────────── */
+.screen        { display: none; min-height: 100vh; padding-bottom: 80px; }
 .screen.active { display: block; }
-.center-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; }
-.header { position: sticky; top: 0; z-index: 100; background: rgba(245,244,241,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
-.header-title { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
-.header-sub { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px; }
+
+.center-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(245,244,241,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title { font-size: 19px; font-weight: 600; letter-spacing: -.3px; }
+.header-sub   { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 2px; }
+
 .content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Cards ─────────────────────────────────────────────── */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
-.card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+.card-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+
+/* ── Summary card ──────────────────────────────────────── */
 .summary-card { background: var(--accent); color: #fff; border-radius: var(--r); padding: 18px; }
 .summary-amount { font-size: 38px; font-weight: 700; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
 .summary-amount.green { color: #4ade80; }
 .summary-rows { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
 .summary-row { display: flex; justify-content: space-between; font-size: 12px; }
-.summary-row .lbl { color: rgba(255,255,255,0.5); }
-.summary-row .val { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.85); font-weight: 500; }
-.summary-row.accent .lbl,.summary-row.accent .val { color: #4ade80; font-weight: 700; }
-.summary-row.neg .lbl,.summary-row.neg .val { color: #f87171; }
-.summary-row.bold .lbl { color: rgba(255,255,255,0.9); font-weight: 600; }
+.summary-row .lbl { color: rgba(255,255,255,.5); }
+.summary-row .val { font-variant-numeric: tabular-nums; color: rgba(255,255,255,.85); font-weight: 500; }
+.summary-row.accent .lbl,
+.summary-row.accent .val { color: #4ade80; font-weight: 700; }
+.summary-row.neg .lbl,
+.summary-row.neg .val { color: #f87171; }
+.summary-row.bold .lbl { color: rgba(255,255,255,.9); font-weight: 600; }
 .summary-row.bold .val { color: #fff; font-weight: 700; }
-.job-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; cursor: pointer; transition: opacity 0.1s; }
-.job-item:active { opacity: 0.7; }
-.job-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
-.job-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Job list item ─────────────────────────────────────── */
+.job-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  cursor: pointer;
+  transition: opacity .1s;
+}
+.job-item:active { opacity: .7; }
+.job-meta   { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.job-name   { font-weight: 600; font-size: 15px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .job-source { font-size: 12px; color: var(--muted); }
-.job-desc { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-desc   { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .job-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); text-align: right; }
 .job-amount.red { color: var(--red); }
 .job-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .job-footer { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .job-cell-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-.job-cell-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.job-cell-val   { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .job-cell-val.yellow { color: #b45309; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; font-family: inherit; font-weight: 600; transition: opacity 0.1s, transform 0.1s; border-radius: var(--rs); }
-.btn:active { opacity: 0.7; transform: scale(0.97); }
-.btn-primary { background: var(--accent); color: #fff; padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; }
-.btn-secondary { background: transparent; color: var(--text); padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; border: 1.5px solid var(--border); }
-.btn-icon { background: transparent; color: var(--muted); padding: 8px; border-radius: 50%; }
-.btn-icon:hover { background: var(--border); }
-.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
-.btn-amber { background: #f59e0b; color: #fff; }
-.btn-red { background: var(--red); color: #fff; }
-.btn-green { background: var(--green); color: #fff; }
-.btn-row { display: flex; gap: 10px; }
-.btn-row .btn-primary { flex: 2; }
+
+/* Payment status badge */
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.payment-badge.unpaid  { background: var(--red-bg);    color: var(--red);   }
+.payment-badge.partial { background: var(--yellow-bg); color: #92400e;      }
+.payment-badge.paid    { background: var(--green-bg);  color: var(--green); }
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: opacity .1s, transform .1s;
+  border-radius: var(--rs);
+}
+.btn:active       { opacity: .7; transform: scale(.97); }
+.btn-primary      { background: var(--accent); color: #fff; padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; }
+.btn-secondary    { background: transparent; color: var(--text); padding: 14px 20px; font-size: 15px; border-radius: 12px; width: 100%; border: 1.5px solid var(--border); }
+.btn-icon         { background: transparent; color: var(--muted); padding: 8px; border-radius: 50%; }
+.btn-icon:hover   { background: var(--border); }
+.btn-sm           { padding: 8px 14px; font-size: 13px; border-radius: 8px; }
+.btn-amber        { background: #f59e0b; color: #fff; }
+.btn-green        { background: var(--green); color: #fff; }
+.btn-red          { background: var(--red); color: #fff; }
+.btn-row          { display: flex; gap: 10px; }
+.btn-row .btn-primary   { flex: 2; }
 .btn-row .btn-secondary { flex: 1; }
-.fab { position: fixed; bottom: 24px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 26px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; z-index: 50; transition: transform 0.15s; }
-.fab:active { transform: scale(0.92); }
-.field { margin-bottom: 0; }
-.field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
-.field-label.yellow { color: #b45309; font-weight: 600; }
-.field-input { width: 100%; padding: 10px 12px; background: #f8f7f4; border: 1.5px solid var(--border); border-radius: var(--rs); font-family: inherit; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
-.field-input:focus { border-color: var(--accent); }
-.field-input.yellow-input { background: #fffbee; border-color: var(--yellow-border); }
-.field-textarea { resize: none; min-height: 64px; }
-.field-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8680' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; transition: border-color 0.15s; }
-.upload-zone:hover { border-color: var(--accent); }
-.upload-zone.yellow-zone { border-color: var(--yellow-border); background: var(--yellow-bg); }
-.upload-zone input { display: none; }
-.upload-icon { font-size: 22px; margin-bottom: 6px; }
-.upload-text { font-size: 13px; font-weight: 600; }
-.upload-text.yellow { color: #b45309; }
-.upload-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.calc-card { background: var(--accent); color: #fff; border-radius: var(--r); overflow: hidden; }
-.calc-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.calc-header-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); font-weight: 600; }
-.calc-body { padding: 0 16px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
-.calc-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
-.calc-row .cl { color: rgba(255,255,255,0.5); }
-.calc-row .cv { font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8); }
-.calc-row.bold .cl { color: rgba(255,255,255,0.9); font-weight: 600; }
-.calc-row.bold .cv { color: #fff; font-weight: 700; }
-.calc-row.neg .cl { color: #f87171; }
-.calc-row.neg .cv { color: #f87171; }
-.calc-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.15); }
-.calc-total-label { font-size: 16px; font-weight: 700; }
-.calc-total-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.calc-total-val.green { color: #4ade80; }
-.calc-total-val.red { color: #f87171; }
-.calc-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
-.notice { border-radius: var(--rs); padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
-.notice.success { background: var(--green-bg); color: #155e36; border: 1px solid #a7f3c8; }
-.notice.error { background: var(--red-bg); color: #7f1d1d; border: 1px solid #fca5a5; }
-.notice.info { background: #eff6ff; color: #1e3a5f; border: 1px solid #bfdbfe; }
-.notice-icon { flex-shrink: 0; }
-.notice-body { flex: 1; }
-.notice-title { font-weight: 700; margin-bottom: 4px; }
-.notice-text { font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; max-height: 100px; overflow: auto; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 4px; margin-top: 4px; }
-.co-item { display: flex; align-items: flex-start; justify-content: space-between; }
-.co-name { font-weight: 600; font-size: 15px; }
-.co-pct { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
-.co-notes { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.dashed-btn { border: 2px dashed var(--border); background: transparent; border-radius: 12px; width: 100%; padding: 13px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
-.dashed-btn:hover { border-color: var(--accent); color: var(--text); }
-.info-box { background: #f0efec; border-radius: var(--rs); padding: 12px 14px; font-size: 12px; color: #5a5750; line-height: 1.6; }
-.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
-.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
-.empty-text { font-size: 14px; }
-.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-.spinner.dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--accent); }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner-full { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-hr { border: none; border-top: 1px solid var(--border); }
-.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(245,244,241,0.95); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 12px 16px; z-index: 50; }
+
 .delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; font-size: 16px; }
 .delete-btn:active { color: var(--red); }
-.auth-logo { font-size: 52px; margin-bottom: 16px; }
-.auth-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; text-align: center; }
-.auth-sub { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
-.auth-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
-.auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* ── FAB ───────────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: 24px; right: 20px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  transition: transform .15s;
+}
+.fab:active { transform: scale(.92); }
+
+/* ── Form fields ───────────────────────────────────────── */
+.field       { margin-bottom: 0; }
+.field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
+.field-label.yellow { color: #b45309; font-weight: 600; }
+
+.field-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f8f7f4;
+  border: 1.5px solid var(--border);
+  border-radius: var(--rs);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+.field-input:focus         { border-color: var(--accent); }
+.field-input.yellow-input  { background: #fffbee; border-color: var(--yellow-bd); }
+.field-input.yellow-input:focus { border-color: var(--yellow); }
+.field-textarea { resize: none; min-height: 64px; }
+.field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8680' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── Upload zones ──────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.upload-zone:hover    { border-color: var(--accent); }
+.upload-zone.active   { border-color: var(--accent); background: rgba(26,24,20,.04); }
+.upload-zone.yellow-zone { border-color: var(--yellow-bd); background: var(--yellow-bg); }
+.upload-zone.yellow-zone:hover { border-color: var(--yellow); }
+.upload-zone input    { display: none; }
+.upload-icon  { font-size: 22px; margin-bottom: 6px; }
+.upload-text  { font-size: 13px; font-weight: 600; }
+.upload-text.yellow { color: #b45309; }
+.upload-hint  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* Paste hint */
+.paste-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.paste-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Calc breakdown ────────────────────────────────────── */
+.calc-card { background: var(--accent); color: #fff; border-radius: var(--r); overflow: hidden; }
+.calc-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.calc-header-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.5); font-weight: 600; }
+.calc-body { padding: 0 16px 16px; border-top: 1px solid rgba(255,255,255,.1); }
+.calc-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+.calc-row .cl { color: rgba(255,255,255,.5); }
+.calc-row .cv { font-variant-numeric: tabular-nums; color: rgba(255,255,255,.8); }
+.calc-row.bold .cl { color: rgba(255,255,255,.9); font-weight: 600; }
+.calc-row.bold .cv { color: #fff; font-weight: 700; }
+.calc-row.neg .cl,
+.calc-row.neg .cv  { color: #f87171; }
+.calc-divider { height: 1px; background: rgba(255,255,255,.1); margin: 4px 0; }
+.calc-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,.15); }
+.calc-total-label { font-size: 16px; font-weight: 700; }
+.calc-total-val   { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.calc-total-val.green { color: #4ade80; }
+.calc-total-val.red   { color: #f87171; }
+
+/* ── Notices ───────────────────────────────────────────── */
+.notice { border-radius: var(--rs); padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
+.notice.success { background: var(--green-bg); color: #155e36; border: 1px solid #a7f3c8; }
+.notice.error   { background: var(--red-bg);   color: #7f1d1d; border: 1px solid #fca5a5; }
+.notice.info    { background: var(--blue-bg);  color: #1e3a5f; border: 1px solid #bfdbfe; }
+.notice-icon  { flex-shrink: 0; }
+.notice-body  { flex: 1; }
+.notice-title { font-weight: 700; margin-bottom: 4px; }
+.notice-text  { font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; max-height: 100px; overflow: auto; background: rgba(0,0,0,.05); padding: 6px; border-radius: 4px; margin-top: 4px; }
+
+/* ── Auth screen ───────────────────────────────────────── */
+.auth-logo  { font-size: 52px; margin-bottom: 16px; }
+.auth-title { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 8px; text-align: center; }
+.auth-sub   { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
+.auth-form  { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
+.auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 4px; }
 .auth-toggle span { color: var(--accent); cursor: pointer; font-weight: 600; text-decoration: underline; }
-.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
-.badge-admin { background: #fef3c7; color: #92400e; }
-.badge-active { background: var(--green-bg); color: var(--green); }
-.badge-pending { background: #eff6ff; color: #1e40af; }
-.badge-suspended { background: var(--red-bg); color: var(--red); }
+
+/* ── Settings ──────────────────────────────────────────── */
+.co-item   { display: flex; align-items: flex-start; justify-content: space-between; }
+.co-name   { font-weight: 600; font-size: 15px; }
+.co-pct    { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.co-notes  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.dashed-btn {
+  border: 2px dashed var(--border);
+  background: transparent;
+  border-radius: 12px;
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.dashed-btn:hover { border-color: var(--accent); color: var(--text); }
+.info-box { background: #f0efec; border-radius: var(--rs); padding: 12px 14px; font-size: 12px; color: #5a5750; line-height: 1.6; }
+
+/* ── Admin / user rows ─────────────────────────────────── */
 .user-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 8px; }
 .user-row:last-child { border-bottom: none; }
-.collapsible-body { display: none; }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.badge-admin     { background: #fef3c7; color: #92400e; }
+.badge-tech      { background: var(--green-bg); color: var(--green); }
+.badge-employer  { background: var(--blue-bg);  color: var(--blue); }
+.badge-pending   { background: var(--border);   color: var(--muted); }
+.badge-suspended { background: var(--red-bg);   color: var(--red); }
+
+/* ── Misc ──────────────────────────────────────────────── */
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+.spinner.dark { border-color: rgba(0,0,0,.15); border-top-color: var(--accent); }
+.spinner-full { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+hr { border: none; border-top: 1px solid var(--border); }
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(245,244,241,.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  z-index: 50;
+}
+.collapsible-body      { display: none; }
 .collapsible-body.open { display: block; }
-.chevron { transition: transform 0.2s; display: inline-block; }
+.chevron      { transition: transform .2s; display: inline-block; }
 .chevron.open { transform: rotate(180deg); }
+
+/* Payment panel in form */
+.payment-section { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.payment-header  { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--card); cursor: pointer; }
+.payment-body    { padding: 16px; border-top: 1px solid var(--border); background: var(--card); display: flex; flex-direction: column; gap: 12px; }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="loading" class="spinner-full"><div class="spinner dark" style="width:32px;height:32px;border-width:3px"></div></div>
+<!-- Loading -->
+<div id="loading" class="spinner-full">
+  <div class="spinner dark" style="width:32px;height:32px;border-width:3px"></div>
+</div>
 
-<!-- AUTH SCREEN -->
+<!-- ── Auth ──────────────────────────────────────────────── -->
 <div id="screen-auth" class="screen">
   <div class="center-screen">
     <div class="auth-logo">🔧</div>
     <div class="auth-title">TRC Income Tracker</div>
-    <div class="auth-sub" id="auth-sub">Войди в свой аккаунт чтобы продолжить</div>
+    <div class="auth-sub" id="auth-sub">Войди в свой аккаунт</div>
     <div class="auth-form">
       <div class="field">
         <label class="field-label">Email</label>
@@ -161,45 +358,43 @@ hr { border: none; border-top: 1px solid var(--border); }
         <label class="field-label">Пароль</label>
         <input id="auth-password" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <div id="auth-name-field" class="field" style="display:none">
+      <div id="auth-name-wrap" class="field" style="display:none">
         <label class="field-label">Имя (необязательно)</label>
         <input id="auth-name" type="text" class="field-input" placeholder="Павло Деркач">
       </div>
-      <button id="auth-submit" class="btn btn-primary btn-amber" onclick="handleAuth()">Войти</button>
+      <button id="auth-btn" class="btn btn-primary btn-amber" onclick="handleAuth()">Войти</button>
       <div id="auth-error" class="notice error" style="display:none">
         <div class="notice-icon">⚠️</div>
         <div class="notice-body"><div id="auth-error-text"></div></div>
       </div>
-      <div class="auth-toggle" id="auth-toggle-text">
+      <div class="auth-toggle" id="auth-toggle">
         Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- PENDING SCREEN -->
+<!-- ── Pending ───────────────────────────────────────────── -->
 <div id="screen-pending" class="screen">
   <div class="center-screen">
     <div style="font-size:52px;margin-bottom:16px">⏳</div>
-    <div class="auth-title">Заявка отправлена</div>
-    <div class="auth-sub">Твоя учётная запись ожидает одобрения администратора. Попробуй войти позже.</div>
-    <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px">
-      <button class="btn btn-secondary" onclick="sb.auth.signOut()">Выйти</button>
-    </div>
+    <div class="auth-title">Ожидание одобрения</div>
+    <div class="auth-sub">Твоя учётная запись ожидает одобрения администратора.</div>
+    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="App.signOut()">Выйти</button>
   </div>
 </div>
 
-<!-- SUSPENDED SCREEN -->
+<!-- ── Suspended ─────────────────────────────────────────── -->
 <div id="screen-suspended" class="screen">
   <div class="center-screen">
     <div style="font-size:52px;margin-bottom:16px">🚫</div>
     <div class="auth-title">Доступ заблокирован</div>
-    <div class="auth-sub">Твоя учётная запись заблокирована. Свяжись с администратором.</div>
-    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="sb.auth.signOut()">Выйти</button>
+    <div class="auth-sub">Свяжись с администратором.</div>
+    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="App.signOut()">Выйти</button>
   </div>
 </div>
 
-<!-- JOB LIST -->
+<!-- ── Job List ───────────────────────────────────────────── -->
 <div id="screen-list" class="screen">
   <div class="header">
     <div>
@@ -207,49 +402,54 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div class="header-title">Журнал джобов</div>
     </div>
     <div style="display:flex;gap:4px">
-      <button id="admin-btn" class="btn btn-icon" onclick="showScreen('admin')" title="Админ" style="display:none">👑</button>
-      <button class="btn btn-icon" onclick="showScreen('settings')" title="Настройки">⚙️</button>
-      <button class="btn btn-icon" onclick="confirmLogout()" title="Выйти">🚪</button>
+      <button id="admin-btn" class="btn btn-icon" onclick="App.showScreen('admin')" style="display:none" title="Админ">👑</button>
+      <button class="btn btn-icon" onclick="App.showScreen('settings')" title="Настройки">⚙️</button>
+      <button class="btn btn-icon" onclick="App.signOut()" title="Выйти">🚪</button>
     </div>
   </div>
   <div class="content">
     <div id="summary-card" class="summary-card"></div>
     <div id="jobs-list"></div>
   </div>
-  <button class="fab" onclick="openForm(null)">+</button>
+  <button class="fab" onclick="JobForm.open(null)">+</button>
 </div>
 
-<!-- JOB FORM -->
+<!-- ── Job Form ───────────────────────────────────────────── -->
 <div id="screen-form" class="screen">
   <div class="header">
-    <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
+    <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
     <div class="header-title" id="form-title">Новый джоб</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <!-- Screenshots -->
+
+    <!-- 1. HCP screenshots -->
     <div class="card">
       <div class="card-label">1. Скриншоты джоба</div>
-      <label class="upload-zone">
-        <input type="file" id="screenshots-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="handleScreenshots(this)">
+      <label class="upload-zone" id="hcp-zone">
+        <input type="file" id="hcp-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleFiles(this,'hcp')">
         <div class="upload-icon">📸</div>
-        <div class="upload-text" id="screenshots-text">Фото / скриншот карточки HCP</div>
+        <div class="upload-text" id="hcp-text">Фото / скриншот карточки HCP</div>
         <div class="upload-hint">Клиент, дата, стоимость, lead source</div>
       </label>
+      <div class="paste-hint">или <kbd>⌘V</kbd> / <kbd>Ctrl+V</kbd> для вставки из буфера</div>
     </div>
-    <!-- Invoice -->
-    <div class="card" style="border-color:var(--yellow-border);background:var(--yellow-bg)">
+
+    <!-- 2. Invoice -->
+    <div class="card" style="border-color:var(--yellow-bd);background:var(--yellow-bg)">
       <div class="card-label" style="color:#b45309">2. Инвойс на закупку з/ч <span style="font-weight:400;text-transform:none;font-size:10px">(Parts Purchase Price)</span></div>
-      <label class="upload-zone yellow-zone">
-        <input type="file" id="invoice-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="handleInvoice(this)">
+      <label class="upload-zone yellow-zone" id="inv-zone">
+        <input type="file" id="inv-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleFiles(this,'invoice')">
         <div class="upload-icon">📄</div>
-        <div class="upload-text yellow" id="invoice-text">Загрузить инвойс</div>
+        <div class="upload-text yellow" id="inv-text">Загрузить инвойс</div>
         <div class="upload-hint">Закупочная стоимость → Net Profit Pool</div>
       </label>
     </div>
+
     <div id="form-notice" style="display:none"></div>
-    <div id="attached-files" class="card" style="display:none"></div>
-    <!-- Fields -->
+    <div id="attached-files" style="display:none"></div>
+
+    <!-- 3. Fields -->
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">3. Данные джоба</div>
       <div style="display:flex;flex-direction:column;gap:12px">
@@ -260,34 +460,34 @@ hr { border: none; border-top: 1px solid var(--border); }
           </div>
           <div class="field">
             <label class="field-label">Дата</label>
-            <input id="f-jobDate" type="date" class="field-input">
+            <input id="f-date" type="date" class="field-input">
           </div>
         </div>
         <div class="field">
           <label class="field-label">Customer Name</label>
-          <input id="f-clientName" type="text" class="field-input" placeholder="Имя клиента">
+          <input id="f-client" type="text" class="field-input" placeholder="Имя клиента">
         </div>
         <div class="field">
           <label class="field-label">Lead Source</label>
-          <select id="f-companyId" class="field-input field-select" onchange="updateCalc()"></select>
+          <select id="f-company" class="field-input field-select" onchange="JobForm.updateCalc()"></select>
         </div>
         <div class="field">
           <label class="field-label">Services (описание работ)</label>
-          <textarea id="f-servicesDescription" class="field-input field-textarea" placeholder="Labour Diagnostic & Repair…"></textarea>
+          <textarea id="f-services-desc" class="field-input field-textarea" placeholder="Labour Diagnostic & Repair…"></textarea>
         </div>
         <div class="grid-2">
           <div class="field">
             <label class="field-label">Services Price ($)</label>
-            <input id="f-servicesPrice" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="updateCalc()">
+            <input id="f-services-price" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="JobForm.updateCalc()">
           </div>
           <div class="field">
             <label class="field-label">Parts Price for Client ($)</label>
-            <input id="f-partsClientPrice" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="updateCalc()">
+            <input id="f-parts-client" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="JobForm.updateCalc()">
           </div>
         </div>
         <div class="field">
           <label class="field-label yellow">Parts Purchase Price ($) <span style="font-weight:400;color:var(--muted)">— закупочная стоимость</span></label>
-          <input id="f-partsPurchasePrice" type="number" step="0.01" class="field-input yellow-input" placeholder="0.00" oninput="updateCalc()">
+          <input id="f-parts-buy" type="number" step="0.01" class="field-input yellow-input" placeholder="0.00" oninput="JobForm.updateCalc()">
         </div>
         <div class="field">
           <label class="field-label">Notes</label>
@@ -295,9 +495,39 @@ hr { border: none; border-top: 1px solid var(--border); }
         </div>
       </div>
     </div>
-    <!-- Calc -->
+
+    <!-- 4. Payment status (visible to employer/admin too) -->
+    <div class="payment-section" id="payment-section">
+      <div class="payment-header" onclick="UI.toggleSection('payment-body','payment-chevron')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">4. Статус оплаты</span>
+          <span id="payment-badge-header" class="payment-badge unpaid">Не оплачено</span>
+        </div>
+        <span class="chevron open" id="payment-chevron">▾</span>
+      </div>
+      <div class="payment-body collapsible-body open" id="payment-body">
+        <div class="field">
+          <label class="field-label">Статус</label>
+          <select id="f-payment-status" class="field-input field-select" onchange="JobForm.updatePaymentBadge()">
+            <option value="unpaid">Не оплачено</option>
+            <option value="partial">Частично оплачено</option>
+            <option value="paid">Оплачено полностью</option>
+          </select>
+        </div>
+        <div class="field" id="paid-amount-wrap">
+          <label class="field-label">Сумма выплаты ($)</label>
+          <input id="f-paid-amount" type="number" step="0.01" class="field-input" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label class="field-label">Заметка к оплате</label>
+          <input id="f-payment-notes" type="text" class="field-input" placeholder="e.g. E-transfer 14 Apr">
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Calc -->
     <div class="calc-card">
-      <div class="calc-header" onclick="toggleCalc()">
+      <div class="calc-header" onclick="UI.toggleSection('calc-body','calc-chevron')">
         <div class="calc-header-label">Расчёт выплаты</div>
         <div class="chevron open" id="calc-chevron">▾</div>
       </div>
@@ -310,292 +540,546 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
     </div>
   </div>
+
   <div class="bottom-bar">
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="showScreen('list')">Отмена</button>
-      <button id="save-btn" class="btn btn-primary" onclick="saveJob()">Сохранить</button>
+      <button class="btn btn-secondary" onclick="App.showScreen('list')">Отмена</button>
+      <button id="save-btn" class="btn btn-primary" onclick="JobForm.save()">Сохранить</button>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- ── Settings ───────────────────────────────────────────── -->
 <div id="screen-settings" class="screen">
   <div class="header">
-    <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
+    <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
     <div class="header-title">Настройки</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
     <div class="info-box">
-      <strong>Commission %</strong> — доля поставщика от Subtotal.<br>
+      <strong>Commission %</strong> — доля поставщика от Subtotal (Services + Parts for Client).<br>
       Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>
       Твоя доля: <strong id="settings-pct-label">40%</strong> от Net Profit Pool.
     </div>
-
     <div class="card">
-      <div class="card-label">Моя доля от Net Profit Pool</div>
+      <div class="card-label">Моя доля</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <input id="tech-pct-input" type="number" min="1" max="100" step="1" class="field-input" style="width:80px" value="40">
+        <input id="s-tech-pct" type="number" min="1" max="100" step="1" class="field-input" style="width:80px" value="40">
         <span style="font-size:14px;color:var(--muted)">%</span>
       </div>
     </div>
-
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">Gemini API Key</div>
-      <div class="field">
-        <input id="settings-apikey" type="password" class="field-input" placeholder="AIza…" autocomplete="off">
+      <input id="s-apikey" type="password" class="field-input" placeholder="AIza…" autocomplete="off">
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">
+        Бесплатно: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">Получить бесплатно: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a></div>
     </div>
-
     <div id="companies-list" style="display:flex;flex-direction:column;gap:10px"></div>
-    <button class="dashed-btn" onclick="addCompany()">＋ Добавить поставщика</button>
-
+    <button class="dashed-btn" onclick="Settings.addCompany()">＋ Добавить поставщика</button>
     <hr>
-    <button class="btn btn-secondary btn-sm" onclick="confirmLogout()" style="width:auto;align-self:flex-start">🚪 Выйти из аккаунта</button>
+    <button class="btn btn-secondary btn-sm" onclick="App.signOut()" style="width:auto;align-self:flex-start">🚪 Выйти</button>
   </div>
   <div class="bottom-bar">
-    <button class="btn btn-primary" onclick="saveSettings()">Сохранить настройки</button>
+    <button class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
+<!-- ── Admin ──────────────────────────────────────────────── -->
 <div id="screen-admin" class="screen">
   <div class="header">
-    <button class="btn btn-icon" onclick="showScreen('list')" style="margin-left:-8px">←</button>
-    <div class="header-title">👑 Админ</div>
+    <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
+    <div class="header-title">👑 Администрирование</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <div class="info-box">Управление пользователями. Одобряй заявки, меняй роли, блокируй доступ.</div>
+    <div class="info-box">
+      Одобряй пользователей, назначай роли.<br>
+      <strong>tech</strong> — техник (создаёт джобы).<br>
+      <strong>employer</strong> — работодатель (видит джобы своих техников, вносит оплаты).<br>
+      После назначения роли <strong>employer</strong> — привяжи к нему техников через «Привязать».
+    </div>
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">Пользователи</div>
-      <div id="admin-users-list">
-        <div class="empty-state"><div class="spinner dark"></div></div>
-      </div>
+      <div id="admin-users"></div>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
+'use strict';
+
+// ════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://kyiixiwlsffpjzrojoaq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const REDIRECT_URL = 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html';
 
 const DEFAULT_COMPANIES = [
-  { name:'Humber Appliance Repair', commission_pct:0.2792, notes:'Calculated from invoice: 187.65/672.12', sort_order:1 },
-  { name:'Jiffy On Demand', commission_pct:0.30, notes:'Default 30%', sort_order:2 },
-  { name:'Dave', commission_pct:0.25, notes:'Default 25%', sort_order:3 },
+  { name: 'Humber Appliance Repair', commission_pct: 0.2792, notes: 'Calculated from invoice: 187.65/672.12', sort_order: 1 },
+  { name: 'Jiffy On Demand',          commission_pct: 0.30,   notes: 'Default 30%', sort_order: 2 },
+  { name: 'Dave',                     commission_pct: 0.25,   notes: 'Default 25%', sort_order: 3 },
 ];
 
-let currentUser = null;
-let currentProfile = null;
-let state = { jobs:[], companies:[], techPct:0.40, apiKey:'', editingJobId:null };
-let pendingFiles = { hcp:[], invoice:[] };
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Auth state listener
-sb.auth.onAuthStateChange(async (event, session) => {
-  document.getElementById('loading').style.display = 'none';
-  if (!session) { showScreen('auth'); return; }
-  currentUser = session.user;
-  await loadProfile();
-});
+const state = {
+  user:      null,
+  profile:   null,
+  jobs:      [],
+  companies: [],
+  apiKey:    '',
+  pending: { hcp: [], invoice: [] },
+  editingJobId: null,
+};
 
-// ═══════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════
-let isRegisterMode = false;
-
-function toggleAuthMode() {
-  isRegisterMode = !isRegisterMode;
-  document.getElementById('auth-sub').textContent = isRegisterMode
-    ? 'Создай аккаунт — администратор одобрит доступ'
-    : 'Войди в свой аккаунт чтобы продолжить';
-  document.getElementById('auth-submit').textContent = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
-  document.getElementById('auth-name-field').style.display = isRegisterMode ? 'block' : 'none';
-  document.getElementById('auth-toggle-text').innerHTML = isRegisterMode
-    ? 'Уже есть аккаунт? <span onclick="toggleAuthMode()">Войти</span>'
-    : 'Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>';
-  document.getElementById('auth-error').style.display = 'none';
-}
-
-async function handleAuth() {
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const btn = document.getElementById('auth-submit');
-  if (!email || !password) { showAuthError('Заполни email и пароль'); return; }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Загрузка…';
-  document.getElementById('auth-error').style.display = 'none';
-
-  try {
-    if (isRegisterMode) {
-      const { error } = await sb.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html' }
-      });
-      if (error) throw error;
-      // Показываем сообщение что нужно подтвердить email
-      showAuthError('✅ Аккаунт создан! Проверь email и нажми ссылку для подтверждения.');
-      btn.disabled = false;
-      btn.textContent = 'Зарегистрироваться';
-      return;
-    } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    }
-  } catch(e) {
-
-    let msg = e.message || String(e);
-    if (msg.includes('Invalid login')) msg = 'Неверный email или пароль';
-    if (msg.includes('already registered')) msg = 'Этот email уже зарегистрирован. Войди.';
-    if (msg.includes('Password should')) msg = 'Пароль должен быть минимум 6 символов';
-    showAuthError(msg);
-    btn.disabled = false;
-    btn.textContent = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
-  }
-}
-
-function showAuthError(msg) {
-  document.getElementById('auth-error').style.display = 'flex';
-  document.getElementById('auth-error-text').textContent = msg;
-}
-
-async function loadProfile() {
-  const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-  if (error || !data) {
-    // Профиль ещё не создан — ждём
-    setTimeout(loadProfile, 1000);
-    return;
-  }
-  currentProfile = data;
-  state.techPct = data.tech_pct || 0.40;
-
-  if (data.role === 'pending') { showScreen('pending'); return; }
-  if (data.role === 'suspended') { showScreen('suspended'); return; }
-
-  // active or admin
-  await loadData();
-  showScreen('list');
-  if (data.role === 'admin') {
-    document.getElementById('admin-btn').style.display = 'flex';
-  }
-}
-
-function confirmLogout() {
-  if (confirm('Выйти из аккаунта?')) sb.auth.signOut();
-}
-
-// ═══════════════════════════════════════
-// DATA LOADING
-// ═══════════════════════════════════════
-async function loadData() {
-  // Загружаем apiKey из localStorage
-  state.apiKey = localStorage.getItem('trc_apikey_' + currentUser.id) || '';
-
-  // Загружаем компании
-  const { data: companies } = await sb.from('companies')
-    .select('*').eq('user_id', currentUser.id).order('sort_order');
-  
-  if (!companies || companies.length === 0) {
-    // Вставляем дефолтные компании
-    const { error } = await sb.rpc('insert_default_companies', { p_user_id: currentUser.id });
-    if (!error) {
-      const { data: c2 } = await sb.from('companies')
-        .select('*').eq('user_id', currentUser.id).order('sort_order');
-      state.companies = c2 || [];
-    }
-  } else {
-    state.companies = companies;
-  }
-
-  // Загружаем джобы
-  const { data: jobs } = await sb.from('jobs')
-    .select('*').eq('user_id', currentUser.id).order('job_date', { ascending: false });
-  state.jobs = jobs || [];
-}
-
-// ═══════════════════════════════════════
-// CALC
-// ═══════════════════════════════════════
-function calcPayout(job, company) {
-  if (!company) return { subtotal:0, leadCommission:0, netProfitPool:0, pavloProfit:0 };
-  const services = Number(job.services_price||job.servicesPrice) || 0;
-  const partsClient = Number(job.parts_client_price||job.partsClientPrice) || 0;
-  const partsBuy = Number(job.parts_purchase_price||job.partsPurchasePrice) || 0;
-  const subtotal = services + partsClient;
-  const leadCommission = subtotal * company.commission_pct;
-  const netProfitPool = subtotal - leadCommission - partsBuy;
-  const pavloProfit = netProfitPool * state.techPct;
-  return { subtotal, leadCommission, netProfitPool, pavloProfit };
-}
+// ════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().slice(0, 10);
 
 function fmt(n) {
-  if (n==null||isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '—';
   const s = '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return n < 0 ? `(${s})` : s;
 }
-function fmtPct(n) { return (Number(n)*100).toFixed(2) + '%'; }
+function fmtPct(n) { return (Number(n) * 100).toFixed(2) + '%'; }
 
-// ═══════════════════════════════════════
-// ROUTING
-// ═══════════════════════════════════════
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name)?.classList.add('active');
-  window.scrollTo(0, 0);
-  if (name === 'list') renderList();
-  if (name === 'settings') renderSettings();
-  if (name === 'admin') loadAdminUsers();
+function calcPayout(job, company) {
+  if (!company) return { subtotal: 0, commission: 0, pool: 0, payout: 0 };
+  const services    = Number(job.services_price)      || 0;
+  const partsClient = Number(job.parts_client_price)  || 0;
+  const partsBuy    = Number(job.parts_purchase_price)|| 0;
+  const subtotal    = services + partsClient;
+  const commission  = subtotal * company.commission_pct;
+  const pool        = subtotal - commission - partsBuy;
+  const payout      = pool * (state.profile?.tech_pct || 0.4);
+  return { subtotal, commission, pool, payout };
 }
 
-// ═══════════════════════════════════════
-// LIST
-// ═══════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════
+const UI = {
+  toggleSection(bodyId, chevronId) {
+    $(bodyId)?.classList.toggle('open');
+    $(chevronId)?.classList.toggle('open');
+  },
+
+  showNotice(type, text) {
+    const el = $('form-notice');
+    const long = text.length > 60;
+    el.innerHTML = `<div class="notice ${type}">
+      <div class="notice-icon">${type === 'success' ? '✅' : '⚠️'}</div>
+      <div class="notice-body">${long
+        ? `<div class="notice-title">${type === 'error' ? 'Ошибка' : 'OK'}</div><div class="notice-text">${text}</div>`
+        : text}</div>
+    </div>`;
+    el.style.display = 'block';
+  },
+
+  hideNotice() { $('form-notice').style.display = 'none'; },
+
+  setBtn(id, html, disabled = false) {
+    const b = $(id);
+    if (!b) return;
+    b.innerHTML = html;
+    b.disabled = disabled;
+  },
+
+  renderAttachments() {
+    const container = $('attached-files');
+    const items = [
+      ...state.pending.hcp.map((f, i)     => ({ file: f, kind: 'hcp',     idx: i })),
+      ...state.pending.invoice.map((f, i) => ({ file: f, kind: 'invoice', idx: i })),
+    ];
+    if (!items.length) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-label">Прикреплённые файлы (${items.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${items.map(item => {
+            const isImg = item.file.type.startsWith('image');
+            const icon  = isImg ? '🖼' : '📄';
+            const color = item.kind === 'hcp' ? '#6b7280' : '#b45309';
+            const label = item.kind === 'hcp' ? 'HCP' : 'Инвойс';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8f7f4;border-radius:8px;border:1px solid var(--border)">
+              <span style="font-size:20px">${icon}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.file.name}</div>
+                <div style="font-size:11px;color:${color}">${label} · не сохранён</div>
+              </div>
+              <button class="btn btn-icon" style="padding:6px" onclick="UI.previewPending('${item.kind}',${item.idx})">👁</button>
+              <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="UI.removePending('${item.kind}',${item.idx})">🗑</button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  },
+
+  previewPending(kind, idx) {
+    const f = state.pending[kind][idx];
+    if (f) window.open(URL.createObjectURL(f), '_blank');
+  },
+
+  removePending(kind, idx) {
+    state.pending[kind].splice(idx, 1);
+    UI.renderAttachments();
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+// IMAGE / GEMINI
+// ════════════════════════════════════════════════════════════
+async function fileToBase64Jpeg(file) {
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    return { mimeType: 'application/pdf', data: await readB64(file) };
+  }
+  const MAX = 600;
+  let src;
+  try { src = await createImageBitmap(file); } catch {
+    src = await new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); res(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Cannot open image')); };
+      img.src = url;
+    });
+  }
+  let w = src.width  || src.naturalWidth;
+  let h = src.height || src.naturalHeight;
+  if (w > MAX || h > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(src, 0, 0, w, h);
+  if (src.close) src.close();
+  return { mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.6).split(',')[1] };
+}
+
+function readB64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('FileReader error'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function callGemini(parts) {
+  if (!state.apiKey) throw new Error('Нет Gemini API Key — добавь в Настройках.');
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${state.apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: { temperature: 0, maxOutputTokens: 1000 } }),
+    }
+  );
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${raw.slice(0, 300)}`);
+  const d = JSON.parse(raw);
+  if (d.error) throw new Error(d.error.message);
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!text) throw new Error('Пустой ответ от Gemini');
+  return text;
+}
+
+function parseJson(text) {
+  const t = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const s = t.indexOf('{'), e = t.lastIndexOf('}');
+  if (s === -1 || e <= s) throw new Error('Нет JSON: ' + t.slice(0, 100));
+  return JSON.parse(t.slice(s, e + 1));
+}
+
+const JOB_PROMPT = `Extract from HouseCall Pro job screenshot. Return JSON only, no prose:
+{"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null}`;
+
+const INV_PROMPT = `Extract from parts purchase invoice. Return JSON only, no prose:
+{"partsPurchasePrice":number|null,"supplier":string|null}`;
+
+async function analyzeFiles(files, mode) {
+  const prompt = mode === 'invoice' ? INV_PROMPT : JOB_PROMPT;
+  let merged = {};
+  for (const file of files) {
+    const { mimeType, data } = await fileToBase64Jpeg(file);
+    const parts = [{ inlineData: { mimeType, data } }, { text: prompt }];
+    const parsed = parseJson(await callGemini(parts));
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v != null && merged[k] == null) merged[k] = v;
+    }
+  }
+  return merged;
+}
+
+// ════════════════════════════════════════════════════════════
+// JOB FORM
+// ════════════════════════════════════════════════════════════
+const JobForm = {
+  open(job) {
+    state.editingJobId = job?.id ?? null;
+    state.pending = { hcp: [], invoice: [] };
+
+    $('form-title').textContent  = job ? 'Редактировать' : 'Новый джоб';
+    $('hcp-text').textContent    = 'Фото / скриншот карточки HCP';
+    $('inv-text').textContent    = 'Загрузить инвойс';
+    UI.hideNotice();
+    UI.renderAttachments();
+
+    // populate company select
+    const sel = $('f-company');
+    sel.innerHTML = '<option value="">— выбрать —</option>' +
+      state.companies.map(c => `<option value="${c.id}">${c.name} (${fmtPct(c.commission_pct)})</option>`).join('');
+
+    const set = (id, v) => { const el = $(id); if (el) el.value = v ?? ''; };
+    if (job) {
+      set('f-jobId',        job.job_id);
+      set('f-date',         job.job_date);
+      set('f-client',       job.client_name);
+      set('f-company',      job.company_id);
+      set('f-services-desc',job.services_description);
+      set('f-services-price',job.services_price);
+      set('f-parts-client', job.parts_client_price);
+      set('f-parts-buy',    job.parts_purchase_price);
+      set('f-notes',        job.notes);
+      set('f-payment-status', job.payment_status ?? 'unpaid');
+      set('f-paid-amount',  job.paid_amount);
+      set('f-payment-notes',job.payment_notes);
+    } else {
+      ['f-jobId','f-client','f-services-desc','f-services-price','f-parts-client','f-parts-buy','f-notes','f-paid-amount','f-payment-notes']
+        .forEach(id => set(id, ''));
+      set('f-date', today());
+      set('f-company', state.companies[0]?.id ?? '');
+      set('f-payment-status', 'unpaid');
+    }
+
+    this.updateCalc();
+    this.updatePaymentBadge();
+    App.showScreen('form');
+  },
+
+  async handleFiles(input, mode) {
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    await this._processFiles(files, mode);
+    input.value = '';
+  },
+
+  async pasteFile(file, mode) {
+    await this._processFiles([file], mode);
+  },
+
+  async _processFiles(files, mode) {
+    const textId = mode === 'hcp' ? 'hcp-text' : 'inv-text';
+    $(textId).innerHTML = '<span class="spinner dark"></span> Распознаю…';
+    UI.hideNotice();
+    try {
+      const data = await analyzeFiles(files, mode);
+      if (mode === 'hcp') {
+        if (data.clientName)           $('f-client').value       = data.clientName;
+        if (data.jobDate)              $('f-date').value         = data.jobDate;
+        if (data.jobId)                $('f-jobId').value        = data.jobId;
+        if (data.servicesDescription)  $('f-services-desc').value= data.servicesDescription;
+        if (data.servicesPrice  != null) $('f-services-price').value = data.servicesPrice;
+        if (data.partsClientPrice!=null) $('f-parts-client').value   = data.partsClientPrice;
+        if (data.leadSource) {
+          const lc = data.leadSource.toLowerCase();
+          const match = state.companies.find(c =>
+            c.name.toLowerCase().includes(lc) || lc.includes(c.name.toLowerCase().split(' ')[0])
+          );
+          if (match) $('f-company').value = match.id;
+        }
+      } else {
+        if (data.partsPurchasePrice != null) $('f-parts-buy').value = data.partsPurchasePrice;
+      }
+      state.pending[mode === 'hcp' ? 'hcp' : 'invoice'].push(...files);
+      this.updateCalc();
+      UI.renderAttachments();
+      UI.showNotice('success', '✅ Распознано' + (data.leadSource ? ` — ${data.leadSource}` : '') + (data.supplier ? ` — ${data.supplier}` : ''));
+      $(textId).textContent = `✓ ${files.length} файл${files.length > 1 ? 'а' : ''} загружено`;
+    } catch (err) {
+      state.pending[mode === 'hcp' ? 'hcp' : 'invoice'].push(...files);
+      UI.renderAttachments();
+      UI.showNotice('error', err.message || String(err));
+      $(textId).textContent = mode === 'hcp' ? 'Фото / скриншот карточки HCP' : 'Загрузить инвойс';
+    }
+  },
+
+  updateCalc() {
+    const company = state.companies.find(c => c.id === $('f-company')?.value);
+    const job = {
+      services_price:       parseFloat($('f-services-price')?.value) || 0,
+      parts_client_price:   parseFloat($('f-parts-client')?.value)   || 0,
+      parts_purchase_price: parseFloat($('f-parts-buy')?.value)      || 0,
+    };
+    const { subtotal, commission, pool, payout } = calcPayout(job, company);
+    const pct     = company ? fmtPct(company.commission_pct) : '—%';
+    const techPct = Math.round((state.profile?.tech_pct || 0.4) * 100);
+
+    $('calc-rows').innerHTML = `
+      <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmt(job.services_price)}</span></div>
+      <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmt(job.parts_client_price)}</span></div>
+      <div class="calc-divider"></div>
+      <div class="calc-row bold"><span class="cl">= Subtotal</span><span class="cv">${fmt(subtotal)}</span></div>
+      <div class="calc-row neg"><span class="cl">− Lead Commission (${pct})</span><span class="cv">${fmt(commission)}</span></div>
+      <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmt(job.parts_purchase_price)}</span></div>
+      <div class="calc-divider"></div>
+      <div class="calc-row bold"><span class="cl">= Net Profit Pool</span><span class="cv">${fmt(pool)}</span></div>
+      <div class="calc-row"><span class="cl">× ${techPct}% (моя доля)</span><span class="cv">${fmt(payout)}</span></div>`;
+
+    const el = $('calc-total');
+    el.textContent = fmt(payout);
+    el.className   = 'calc-total-val ' + (payout >= 0 ? 'green' : 'red');
+  },
+
+  updatePaymentBadge() {
+    const status = $('f-payment-status')?.value || 'unpaid';
+    const labels = { unpaid: 'Не оплачено', partial: 'Частично', paid: 'Оплачено' };
+    const badge  = $('payment-badge-header');
+    badge.textContent = labels[status];
+    badge.className   = `payment-badge ${status}`;
+    $('paid-amount-wrap').style.display = status === 'paid' ? 'none' : 'block';
+  },
+
+  async save() {
+    const companyId = $('f-company').value;
+    if (!companyId) { UI.showNotice('error', 'Выбери поставщика заказа'); return; }
+
+    UI.setBtn('save-btn', '<span class="spinner"></span> Сохраняю…', true);
+    try {
+      const row = {
+        user_id:              state.user.id,
+        job_id:               $('f-jobId').value.trim() || null,
+        job_date:             $('f-date').value         || null,
+        client_name:          $('f-client').value.trim()|| null,
+        company_id:           companyId,
+        services_description: $('f-services-desc').value.trim() || null,
+        services_price:       parseFloat($('f-services-price').value) || 0,
+        parts_client_price:   parseFloat($('f-parts-client').value)   || 0,
+        parts_purchase_price: parseFloat($('f-parts-buy').value)      || 0,
+        notes:                $('f-notes').value.trim()               || null,
+        payment_status:       $('f-payment-status').value,
+        paid_amount:          parseFloat($('f-paid-amount').value)    || 0,
+        payment_notes:        $('f-payment-notes').value.trim()       || null,
+        paid_by:              state.user.id,
+      };
+
+      let jobId;
+      if (state.editingJobId) {
+        const { error } = await db.from('jobs').update(row).eq('id', state.editingJobId);
+        if (error) throw error;
+        jobId = state.editingJobId;
+      } else {
+        const { data, error } = await db.from('jobs').insert(row).select().single();
+        if (error) throw error;
+        jobId = data.id;
+      }
+
+      // Upload attachments
+      const uploads = [
+        ...state.pending.hcp.map(f     => ({ file: f, kind: 'hcp' })),
+        ...state.pending.invoice.map(f => ({ file: f, kind: 'invoice' })),
+      ];
+      await Promise.all(uploads.map(({ file, kind }) => uploadFile(file, jobId, kind)));
+
+      await App.loadData();
+      App.showScreen('list');
+    } catch (err) {
+      UI.showNotice('error', err.message || String(err));
+    } finally {
+      UI.setBtn('save-btn', 'Сохранить', false);
+    }
+  },
+};
+
+async function uploadFile(file, jobId, kind) {
+  const ext  = file.name.split('.').pop() || 'jpg';
+  const path = `${state.user.id}/${jobId}/${Date.now()}_${kind}.${ext}`;
+  const { error: upErr } = await db.storage.from('screenshots').upload(path, file);
+  if (upErr) { console.warn('Upload error:', upErr); return; }
+  await db.from('attachments').insert({
+    job_id: jobId, user_id: state.user.id,
+    storage_path: path, kind,
+    file_name: file.name, mime_type: file.type,
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// LIST RENDER
+// ════════════════════════════════════════════════════════════
 function renderList() {
   const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
-  const T = state.jobs.reduce((a,j) => {
+  const totals = state.jobs.reduce((acc, j) => {
     const p = calcPayout(j, byId[j.company_id]);
-    return { sub:a.sub+p.subtotal, comm:a.comm+p.leadCommission, buy:a.buy+(Number(j.parts_purchase_price)||0), pool:a.pool+p.netProfitPool, pavlo:a.pavlo+p.pavloProfit };
-  }, { sub:0, comm:0, buy:0, pool:0, pavlo:0 });
+    return {
+      subtotal:  acc.subtotal  + p.subtotal,
+      commission:acc.commission+ p.commission,
+      partsBuy:  acc.partsBuy  + (Number(j.parts_purchase_price) || 0),
+      pool:      acc.pool      + p.pool,
+      payout:    acc.payout    + p.payout,
+      paid:      acc.paid      + (Number(j.paid_amount) || 0),
+    };
+  }, { subtotal: 0, commission: 0, partsBuy: 0, pool: 0, payout: 0, paid: 0 });
 
-  const techPct = Math.round(state.techPct*100);
-  document.getElementById('summary-card').innerHTML = `
-    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.5);margin-bottom:4px">Моя выплата</div>
-    <div class="summary-amount ${T.pavlo>=0?'green':''}">${fmt(T.pavlo)}</div>
+  const techPct  = Math.round((state.profile?.tech_pct || 0.4) * 100);
+  const remaining = totals.payout - totals.paid;
+
+  $('summary-card').innerHTML = `
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:4px">Моя выплата</div>
+    <div class="summary-amount ${totals.payout >= 0 ? 'green' : ''}">${fmt(totals.payout)}</div>
     <div class="summary-rows">
-      <div class="summary-row"><span class="lbl">Subtotal</span><span class="val">${fmt(T.sub)}</span></div>
-      <div class="summary-row neg"><span class="lbl">− Комиссии</span><span class="val">${fmt(T.comm)}</span></div>
-      <div class="summary-row neg"><span class="lbl">− Закупка з/ч</span><span class="val">${fmt(T.buy)}</span></div>
-      <div class="summary-row bold"><span class="lbl">= Net Profit Pool</span><span class="val">${fmt(T.pool)}</span></div>
-      <div class="summary-row accent"><span class="lbl">× ${techPct}% = Мне</span><span class="val">${fmt(T.pavlo)}</span></div>
+      <div class="summary-row"><span class="lbl">Subtotal</span><span class="val">${fmt(totals.subtotal)}</span></div>
+      <div class="summary-row neg"><span class="lbl">− Комиссии</span><span class="val">${fmt(totals.commission)}</span></div>
+      <div class="summary-row neg"><span class="lbl">− Закупка з/ч</span><span class="val">${fmt(totals.partsBuy)}</span></div>
+      <div class="summary-row bold"><span class="lbl">= Net Profit Pool</span><span class="val">${fmt(totals.pool)}</span></div>
+      <div class="summary-row accent"><span class="lbl">× ${techPct}% = Мне</span><span class="val">${fmt(totals.payout)}</span></div>
+      <div class="summary-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)">
+        <span class="lbl">Выплачено</span><span class="val">${fmt(totals.paid)}</span>
+      </div>
+      <div class="summary-row bold">
+        <span class="lbl" style="color:${remaining > 0 ? '#f87171':'#4ade80'}">Остаток</span>
+        <span class="val" style="color:${remaining > 0 ? '#f87171':'#4ade80'}">${fmt(remaining)}</span>
+      </div>
     </div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px">${state.jobs.length} джоб${state.jobs.length===1?'':state.jobs.length<5?'а':'ов'}</div>
-  `;
+    <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:12px">${state.jobs.length} джоб${state.jobs.length===1?'':state.jobs.length<5?'а':'ов'}</div>`;
 
-  if (state.jobs.length === 0) {
-    document.getElementById('jobs-list').innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Нет джобов. Нажми + чтобы добавить.</div></div>`;
+  if (!state.jobs.length) {
+    $('jobs-list').innerHTML = `<div class="empty-state" style="text-align:center;padding:48px 20px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px;opacity:.3">📋</div>
+      <div style="font-size:14px">Нет джобов. Нажми + чтобы добавить.</div>
+    </div>`;
     return;
   }
 
-  document.getElementById('jobs-list').innerHTML = state.jobs.map(j => {
+  const paymentLabel = { unpaid: 'Не оплачено', partial: 'Частично', paid: 'Оплачено' };
+
+  $('jobs-list').innerHTML = state.jobs.map(j => {
     const c = byId[j.company_id];
     const p = calcPayout(j, c);
-    return `<div class="job-item" onclick="openForm(${JSON.stringify(j).replace(/"/g,'&quot;')})">
+    const ps = j.payment_status || 'unpaid';
+    return `<div class="job-item" onclick='JobForm.open(${JSON.stringify(j).replace(/'/g,"\\'")})'> 
       <div class="job-header">
         <div style="flex:1;min-width:0">
-          <div class="job-meta">📅 ${j.job_date||'—'}${j.job_id?` · #${j.job_id}`:''}</div>
-          <div class="job-name">${j.client_name||'Без имени'}</div>
-          <div class="job-source">🏢 ${c?c.name+` (${fmtPct(c.commission_pct)})`:"<span style='color:var(--red)'>нет компании</span>"}</div>
-          ${j.services_description?`<div class="job-desc">${j.services_description}</div>`:''}
+          <div class="job-meta">
+            📅 ${j.job_date || '—'}${j.job_id ? ` · #${j.job_id}` : ''}
+            <span class="payment-badge ${ps}">${paymentLabel[ps]}</span>
+            ${ps === 'partial' ? `<span style="font-size:11px;color:#92400e">${fmt(j.paid_amount)}</span>` : ''}
+          </div>
+          <div class="job-name">${j.client_name || 'Без имени'}</div>
+          <div class="job-source">🏢 ${c ? c.name + ` (${fmtPct(c.commission_pct)})` : '<span style="color:var(--red)">нет компании</span>'}</div>
+          ${j.services_description ? `<div class="job-desc">${j.services_description}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
           <div style="font-size:11px;color:var(--muted)">Мне</div>
-          <div class="job-amount ${p.pavloProfit<0?'red':''}">${fmt(p.pavloProfit)}</div>
+          <div class="job-amount ${p.payout < 0 ? 'red' : ''}">${fmt(p.payout)}</div>
           <button class="delete-btn" onclick="event.stopPropagation();deleteJob('${j.id}')">🗑</button>
         </div>
       </div>
@@ -603,497 +1087,279 @@ function renderList() {
         <div><div class="job-cell-label">Услуги</div><div class="job-cell-val">${fmt(j.services_price)}</div></div>
         <div><div class="job-cell-label">З/ч клиент</div><div class="job-cell-val">${fmt(j.parts_client_price)}</div></div>
         <div><div class="job-cell-label">З/ч закупка</div><div class="job-cell-val yellow">${fmt(j.parts_purchase_price)}</div></div>
-        <div><div class="job-cell-label">Net Pool</div><div class="job-cell-val">${fmt(p.netProfitPool)}</div></div>
+        <div><div class="job-cell-label">Net Pool</div><div class="job-cell-val">${fmt(p.pool)}</div></div>
       </div>
     </div>`;
   }).join('');
 }
 
 async function deleteJob(id) {
-  if (!confirm('Удалить джоб?')) return;
-  // Удаляем вложения из storage
-  const { data: atts } = await sb.from('attachments').select('storage_path').eq('job_id', id);
-  if (atts?.length) {
-    await sb.storage.from('screenshots').remove(atts.map(a => a.storage_path));
-  }
-  await sb.from('jobs').delete().eq('id', id);
+  if (!confirm('Удалить этот джоб?')) return;
+  const { data: atts } = await db.from('attachments').select('storage_path').eq('job_id', id);
+  if (atts?.length) await db.storage.from('screenshots').remove(atts.map(a => a.storage_path));
+  await db.from('jobs').delete().eq('id', id);
   state.jobs = state.jobs.filter(j => j.id !== id);
   renderList();
 }
 
-// ═══════════════════════════════════════
-// FORM
-// ═══════════════════════════════════════
-function openForm(job) {
-  state.editingJobId = job ? job.id : null;
-  pendingFiles = { hcp:[], invoice:[] };
-  document.getElementById('form-title').textContent = job ? 'Редактировать' : 'Новый джоб';
-  document.getElementById('form-notice').style.display = 'none';
-  document.getElementById('attached-files').style.display = 'none';
-  document.getElementById('screenshots-text').textContent = 'Фото / скриншот карточки HCP';
-  document.getElementById('invoice-text').textContent = 'Загрузить инвойс';
-
-  const sel = document.getElementById('f-companyId');
-  sel.innerHTML = '<option value="">— выбрать —</option>' +
-    state.companies.map(c => `<option value="${c.id}">${c.name} (${fmtPct(c.commission_pct)})</option>`).join('');
-
-  if (job) {
-    sf('f-jobId', job.job_id||'');
-    sf('f-jobDate', job.job_date||today());
-    sf('f-clientName', job.client_name||'');
-    sf('f-companyId', job.company_id||'');
-    sf('f-servicesDescription', job.services_description||'');
-    sf('f-servicesPrice', job.services_price||'');
-    sf('f-partsClientPrice', job.parts_client_price||'');
-    sf('f-partsPurchasePrice', job.parts_purchase_price||'');
-    sf('f-notes', job.notes||'');
-    loadAttachments(job.id);
-  } else {
-    ['f-jobId','f-clientName','f-servicesDescription','f-servicesPrice','f-partsClientPrice','f-partsPurchasePrice','f-notes'].forEach(id => sf(id,''));
-    sf('f-jobDate', today());
-    sf('f-companyId', state.companies[0]?.id||'');
-  }
-  updateCalc();
-  showScreen('form');
-}
-
-function sf(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
-function gf(id) { return document.getElementById(id)?.value||''; }
-function today() { return new Date().toISOString().slice(0,10); }
-
-async function loadAttachments(jobId) {
-  const { data } = await sb.from('attachments').select('*').eq('job_id', jobId);
-  if (!data?.length) return;
-  renderAttachments(data.map(a => ({ ...a, isSaved: true })));
-}
-
-function renderAttachments(items) {
-  const container = document.getElementById('attached-files');
-  if (!items.length) { container.style.display = 'none'; return; }
-  container.style.display = 'block';
-  container.innerHTML = `
-    <div class="card-label">Прикреплённые файлы (${items.length})</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${items.map((item,i) => {
-        const name = item.isSaved ? item.file_name : item.file.name;
-        const kind = item.kind;
-        const kindLabel = kind === 'hcp' ? 'HCP' : 'Инвойс';
-        const kindColor = kind === 'hcp' ? '#6b7280' : '#b45309';
-        const isPdf = name?.endsWith('.pdf');
-        const icon = isPdf ? '📄' : '🖼';
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8f7f4;border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:20px">${icon}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name||'Файл'}</div>
-            <div style="font-size:11px;color:${kindColor}">${kindLabel}${item.isSaved?'':' · не сохранён'}</div>
-          </div>
-          ${item.isSaved
-            ? `<button class="btn btn-icon" style="padding:6px" onclick="viewSavedFile('${item.storage_path}')">👁</button>
-               <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="deleteSavedFile('${item.id}','${item.storage_path}')">🗑</button>`
-            : `<button class="btn btn-icon" style="padding:6px" onclick="viewPendingFile('${kind}',${item.pendingIdx})">👁</button>
-               <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="removePendingFile('${kind}',${item.pendingIdx})">🗑</button>`
-          }
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-
-async function viewSavedFile(path) {
-  const { data } = await sb.storage.from('screenshots').createSignedUrl(path, 3600);
-  if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-}
-
-async function deleteSavedFile(id, path) {
-  if (!confirm('Удалить файл?')) return;
-  await sb.storage.from('screenshots').remove([path]);
-  await sb.from('attachments').delete().eq('id', id);
-  if (state.editingJobId) loadAttachments(state.editingJobId);
-}
-
-function viewPendingFile(kind, idx) {
-  const f = pendingFiles[kind][idx];
-  if (!f) return;
-  window.open(URL.createObjectURL(f), '_blank');
-}
-
-function removePendingFile(kind, idx) {
-  pendingFiles[kind].splice(idx, 1);
-  refreshPendingAttachments();
-}
-
-function refreshPendingAttachments() {
-  const items = [
-    ...pendingFiles.hcp.map((f,i) => ({ file:f, kind:'hcp', pendingIdx:i, isSaved:false })),
-    ...pendingFiles.invoice.map((f,i) => ({ file:f, kind:'invoice', pendingIdx:i, isSaved:false })),
-  ];
-  renderAttachments(items);
-}
-
-// ═══════════════════════════════════════
-// IMAGE RECOGNITION
-// ═══════════════════════════════════════
-async function fileToJpeg(file) {
-  if (/\.pdf$/i.test(file.name)||file.type==='application/pdf') {
-    const data = await readB64(file);
-    return { type:'document', source:{ type:'base64', media_type:'application/pdf', data } };
-  }
-  const maxDim = 600;
-  let src;
-  try { src = await createImageBitmap(file); } catch {
-    src = await new Promise((res,rej) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => { URL.revokeObjectURL(url); res(img); };
-      img.onerror = () => { URL.revokeObjectURL(url); rej(); };
-      img.src = url;
-    });
-  }
-  let w = src.width||src.naturalWidth, h = src.height||src.naturalHeight;
-  if (w>maxDim||h>maxDim) { const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
-  const canvas = document.createElement('canvas');
-  canvas.width=w; canvas.height=h;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(src,0,0,w,h);
-  if (src.close) src.close();
-  return { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: canvas.toDataURL('image/jpeg',0.6).split(',')[1] } };
-}
-
-function readB64(file) {
-  return new Promise((res,rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej();
-    r.readAsDataURL(file);
-  });
-}
-
-async function callGemini(parts) {
-  const apiKey = state.apiKey;
-  if (!apiKey) throw new Error('Нет Gemini API Key. Добавь в Настройках.');
-  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ contents:[{parts}], generationConfig:{ temperature:0, maxOutputTokens:1000 } })
-  });
-  const raw = await resp.text();
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${raw.slice(0,300)}`);
-  const d = JSON.parse(raw);
-  if (d.error) throw new Error(d.error.message);
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  if (!text) throw new Error('Пустой ответ от Gemini');
-  return text;
-}
-
-function extractJson(text) {
-  const t = text.replace(/```json/gi,'').replace(/```/g,'').trim();
-  const s=t.indexOf('{'), e=t.lastIndexOf('}');
-  if (s===-1||e<=s) throw new Error('Нет JSON: '+text.slice(0,100));
-  return JSON.parse(t.slice(s,e+1));
-}
-
-const JOB_PROMPT = `Extract from HouseCall Pro job card screenshot. Return JSON only:
-{"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null}
-Numbers only, no $`;
-
-const INV_PROMPT = `Extract from parts purchase invoice. Return JSON only:
-{"partsPurchasePrice":number|null,"supplier":string|null}
-Number only, no $`;
-
-async function analyzeFiles(files, mode) {
-  let merged = {};
-  for (const file of files) {
-    const content = await fileToJpeg(file);
-    const parts = [];
-    if (content.type==='document') parts.push({ inlineData:{ mimeType:'application/pdf', data:content.source.data } });
-    else parts.push({ inlineData:{ mimeType:'image/jpeg', data:content.source.data } });
-    parts.push({ text: mode==='invoice'?INV_PROMPT:JOB_PROMPT });
-    const text = await callGemini(parts);
-    const parsed = extractJson(text);
-    for (const [k,v] of Object.entries(parsed)) {
-      if (v!==null&&v!==undefined&&merged[k]==null) merged[k]=v;
-    }
-  }
-  return merged;
-}
-
-async function handleScreenshots(input) {
-  const files = Array.from(input.files||[]);
-  if (!files.length) return;
-  const textEl = document.getElementById('screenshots-text');
-  textEl.innerHTML = '<span class="spinner dark"></span> Распознаю…';
-  hideNotice();
-  try {
-    const data = await analyzeFiles(files, 'job');
-    if (data.clientName) sf('f-clientName', data.clientName);
-    if (data.jobDate) sf('f-jobDate', data.jobDate);
-    if (data.jobId) sf('f-jobId', data.jobId);
-    if (data.servicesDescription) sf('f-servicesDescription', data.servicesDescription);
-    if (data.servicesPrice!=null) sf('f-servicesPrice', data.servicesPrice);
-    if (data.partsClientPrice!=null) sf('f-partsClientPrice', data.partsClientPrice);
-    if (data.leadSource) {
-      const match = state.companies.find(c =>
-        c.name.toLowerCase().includes(data.leadSource.toLowerCase()) ||
-        data.leadSource.toLowerCase().includes(c.name.toLowerCase().split(' ')[0])
-      );
-      if (match) sf('f-companyId', match.id);
-    }
-    pendingFiles.hcp.push(...files);
-    updateCalc(); refreshPendingAttachments();
-    showNotice('success', '✅ Распознано' + (data.leadSource ? ` — Lead Source: ${data.leadSource}` : ''));
-    textEl.textContent = `✓ ${files.length} файл${files.length>1?'а':''} загружено`;
-  } catch(e) {
-    pendingFiles.hcp.push(...files);
-    refreshPendingAttachments();
-    showNotice('error', e.message||String(e));
-    textEl.textContent = 'Фото / скриншот карточки HCP';
-  }
-  input.value = '';
-}
-
-async function handleInvoice(input) {
-  const files = Array.from(input.files||[]);
-  if (!files.length) return;
-  const textEl = document.getElementById('invoice-text');
-  textEl.innerHTML = '<span class="spinner dark"></span> Распознаю…';
-  hideNotice();
-  try {
-    const data = await analyzeFiles(files, 'invoice');
-    if (data.partsPurchasePrice!=null) sf('f-partsPurchasePrice', data.partsPurchasePrice);
-    pendingFiles.invoice.push(...files);
-    updateCalc(); refreshPendingAttachments();
-    showNotice('success', '✅ Инвойс распознан' + (data.supplier?` — ${data.supplier}`:''));
-    textEl.textContent = '✓ Инвойс загружен';
-  } catch(e) {
-    pendingFiles.invoice.push(...files);
-    refreshPendingAttachments();
-    showNotice('error', e.message||String(e));
-    textEl.textContent = 'Загрузить инвойс';
-  }
-  input.value = '';
-}
-
-function showNotice(type, text) {
-  const el = document.getElementById('form-notice');
-  const isLong = text.length > 60;
-  el.innerHTML = `<div class="notice ${type}">
-    <div class="notice-icon">${type==='success'?'✅':'⚠️'}</div>
-    <div class="notice-body">${isLong?`<div class="notice-title">${type==='error'?'Ошибка':'OK'}</div><div class="notice-text">${text}</div>`:text}</div>
-  </div>`;
-  el.style.display = 'block';
-}
-function hideNotice() { document.getElementById('form-notice').style.display='none'; }
-
-function updateCalc() {
-  const companyId = gf('f-companyId');
-  const company = state.companies.find(c => c.id===companyId);
-  const job = {
-    services_price: parseFloat(gf('f-servicesPrice'))||0,
-    parts_client_price: parseFloat(gf('f-partsClientPrice'))||0,
-    parts_purchase_price: parseFloat(gf('f-partsPurchasePrice'))||0,
-  };
-  const p = calcPayout(job, company);
-  const pct = company ? fmtPct(company.commission_pct) : '—%';
-  const techPct = Math.round(state.techPct*100);
-  document.getElementById('calc-rows').innerHTML = `
-    <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmt(job.services_price)}</span></div>
-    <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmt(job.parts_client_price)}</span></div>
-    <div class="calc-divider"></div>
-    <div class="calc-row bold"><span class="cl">= Subtotal</span><span class="cv">${fmt(p.subtotal)}</span></div>
-    <div class="calc-row neg"><span class="cl">− Lead Commission (${pct})</span><span class="cv">${fmt(p.leadCommission)}</span></div>
-    <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmt(job.parts_purchase_price)}</span></div>
-    <div class="calc-divider"></div>
-    <div class="calc-row bold"><span class="cl">= Net Profit Pool</span><span class="cv">${fmt(p.netProfitPool)}</span></div>
-    <div class="calc-row"><span class="cl">× ${techPct}% (моя доля)</span><span class="cv">${fmt(p.pavloProfit)}</span></div>`;
-  const el = document.getElementById('calc-total');
-  el.textContent = fmt(p.pavloProfit);
-  el.className = 'calc-total-val ' + (p.pavloProfit>=0?'green':'red');
-}
-
-function toggleCalc() {
-  document.getElementById('calc-body').classList.toggle('open');
-  document.getElementById('calc-chevron').classList.toggle('open');
-}
-
-async function saveJob() {
-  const companyId = gf('f-companyId');
-  if (!companyId) { showNotice('error','Выбери поставщика заказа'); return; }
-
-  const btn = document.getElementById('save-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Сохраняю…';
-
-  try {
-    const jobData = {
-      user_id: currentUser.id,
-      job_id: gf('f-jobId').trim(),
-      job_date: gf('f-jobDate')||null,
-      client_name: gf('f-clientName').trim(),
-      company_id: companyId,
-      services_description: gf('f-servicesDescription').trim(),
-      services_price: parseFloat(gf('f-servicesPrice'))||0,
-      parts_client_price: parseFloat(gf('f-partsClientPrice'))||0,
-      parts_purchase_price: parseFloat(gf('f-partsPurchasePrice'))||0,
-      notes: gf('f-notes').trim(),
-    };
-
-    let jobId;
-    if (state.editingJobId) {
-      const { error } = await sb.from('jobs').update(jobData).eq('id', state.editingJobId);
-      if (error) throw error;
-      jobId = state.editingJobId;
-    } else {
-      const { data, error } = await sb.from('jobs').insert(jobData).select().single();
-      if (error) throw error;
-      jobId = data.id;
-    }
-
-    // Загружаем вложения
-    for (const file of pendingFiles.hcp) {
-      await uploadFile(file, jobId, 'hcp');
-    }
-    for (const file of pendingFiles.invoice) {
-      await uploadFile(file, jobId, 'invoice');
-    }
-
-    // Обновляем state
-    await loadData();
-    pendingFiles = { hcp:[], invoice:[] };
-    showScreen('list');
-  } catch(e) {
-    showNotice('error', e.message||String(e));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Сохранить';
-  }
-}
-
-async function uploadFile(file, jobId, kind) {
-  try {
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${currentUser.id}/${jobId}/${Date.now()}_${kind}.${ext}`;
-    const { error: uploadError } = await sb.storage.from('screenshots').upload(path, file);
-    if (uploadError) throw uploadError;
-    const { error: dbError } = await sb.from('attachments').insert({
-      job_id: jobId,
-      user_id: currentUser.id,
-      storage_path: path,
-      kind,
-      file_name: file.name,
-      mime_type: file.type,
-    });
-    if (dbError) throw dbError;
-  } catch(e) {
-    console.error('Upload failed:', e);
-  }
-}
-
-// ═══════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // SETTINGS
-// ═══════════════════════════════════════
-function renderSettings() {
-  document.getElementById('tech-pct-input').value = Math.round(state.techPct*100);
-  document.getElementById('settings-pct-label').textContent = Math.round(state.techPct*100) + '%';
-  document.getElementById('settings-apikey').value = state.apiKey;
-
-  document.getElementById('companies-list').innerHTML = state.companies.map(c => `
-    <div class="card">
-      <div class="co-item">
-        <div style="flex:1;cursor:pointer" onclick="editCompany('${c.id}')">
-          <div class="co-name">${c.name}</div>
-          <div class="co-pct">${fmtPct(c.commission_pct)}</div>
-          ${c.notes?`<div class="co-notes">${c.notes}</div>`:''}
+// ════════════════════════════════════════════════════════════
+const Settings = {
+  render() {
+    $('s-tech-pct').value = Math.round((state.profile?.tech_pct || 0.4) * 100);
+    $('s-apikey').value   = state.apiKey;
+    $('settings-pct-label').textContent = Math.round((state.profile?.tech_pct || 0.4) * 100) + '%';
+    $('companies-list').innerHTML = state.companies.map(c => `
+      <div class="card">
+        <div class="co-item">
+          <div style="flex:1;cursor:pointer" onclick="Settings.editCompany('${c.id}')">
+            <div class="co-name">${c.name}</div>
+            <div class="co-pct">${fmtPct(c.commission_pct)}</div>
+            ${c.notes ? `<div class="co-notes">${c.notes}</div>` : ''}
+          </div>
+          <div style="display:flex">
+            <button class="btn btn-icon" onclick="Settings.editCompany('${c.id}')">✏️</button>
+            <button class="btn btn-icon" onclick="Settings.deleteCompany('${c.id}')">🗑</button>
+          </div>
         </div>
-        <div style="display:flex">
-          <button class="btn btn-icon" onclick="editCompany('${c.id}')">✏️</button>
-          <button class="btn btn-icon" onclick="deleteCompany('${c.id}')">🗑</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
+      </div>`).join('');
+  },
 
-async function saveSettings() {
-  const pct = parseInt(document.getElementById('tech-pct-input').value)||40;
-  state.techPct = Math.min(100, Math.max(1, pct)) / 100;
-  const apiKey = document.getElementById('settings-apikey').value.trim();
-  state.apiKey = apiKey;
-  localStorage.setItem('trc_apikey_'+currentUser.id, apiKey);
-  await sb.from('profiles').update({ tech_pct: state.techPct }).eq('id', currentUser.id);
-  showScreen('list');
-}
+  async save() {
+    const pct    = Math.min(100, Math.max(1, parseInt($('s-tech-pct').value) || 40)) / 100;
+    const apiKey = $('s-apikey').value.trim();
+    state.apiKey = apiKey;
+    localStorage.setItem('trc_apikey_' + state.user.id, apiKey);
+    await db.from('profiles').update({ tech_pct: pct }).eq('id', state.user.id);
+    state.profile.tech_pct = pct;
+    App.showScreen('list');
+  },
 
-async function editCompany(id) {
-  const c = state.companies.find(x => x.id===id);
-  if (!c) return;
-  const name = prompt('Название:', c.name); if (!name) return;
-  const pct = prompt(`Commission % (сейчас ${fmtPct(c.commission_pct)}):`, (c.commission_pct*100).toFixed(4)); if (!pct) return;
-  const notes = prompt('Заметки:', c.notes||'')||'';
-  const { error } = await sb.from('companies').update({
-    name: name.trim(),
-    commission_pct: parseFloat(pct)/100,
-    notes,
-  }).eq('id', id);
-  if (!error) {
-    const co = state.companies.find(x=>x.id===id);
-    if (co) { co.name=name.trim(); co.commission_pct=parseFloat(pct)/100; co.notes=notes; }
-  }
-  renderSettings();
-}
+  async addCompany() {
+    const name  = prompt('Название компании:');  if (!name)  return;
+    const pct   = prompt('Commission % (например 25):'); if (!pct) return;
+    const notes = prompt('Заметки (необязательно):') || '';
+    const { data, error } = await db.from('companies').insert({
+      user_id: state.user.id,
+      name: name.trim(),
+      commission_pct: parseFloat(pct) / 100,
+      notes,
+      sort_order: state.companies.length + 1,
+    }).select().single();
+    if (!error && data) { state.companies.push(data); this.render(); }
+  },
 
-async function deleteCompany(id) {
-  if (!confirm('Удалить поставщика?')) return;
-  await sb.from('companies').delete().eq('id', id);
-  state.companies = state.companies.filter(c=>c.id!==id);
-  renderSettings();
-}
+  async editCompany(id) {
+    const c    = state.companies.find(x => x.id === id); if (!c) return;
+    const name = prompt('Название:', c.name);                      if (!name) return;
+    const pct  = prompt(`Commission % (${fmtPct(c.commission_pct)}):`, (c.commission_pct * 100).toFixed(4)); if (!pct) return;
+    const notes = prompt('Заметки:', c.notes || '') || '';
+    const updates = { name: name.trim(), commission_pct: parseFloat(pct) / 100, notes };
+    const { error } = await db.from('companies').update(updates).eq('id', id);
+    if (!error) { Object.assign(c, updates); this.render(); }
+  },
 
-async function addCompany() {
-  const name = prompt('Название компании:'); if (!name) return;
-  const pct = prompt('Commission % (например 25):'); if (!pct) return;
-  const notes = prompt('Заметки (необязательно):')||'';
-  const { data, error } = await sb.from('companies').insert({
-    user_id: currentUser.id,
-    name: name.trim(),
-    commission_pct: parseFloat(pct)/100,
-    notes,
-    sort_order: state.companies.length + 1,
-  }).select().single();
-  if (!error && data) state.companies.push(data);
-  renderSettings();
-}
+  async deleteCompany(id) {
+    if (!confirm('Удалить поставщика?')) return;
+    await db.from('companies').delete().eq('id', id);
+    state.companies = state.companies.filter(c => c.id !== id);
+    this.render();
+  },
+};
 
-// ═══════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // ADMIN
-// ═══════════════════════════════════════
-async function loadAdminUsers() {
-  const { data, error } = await sb.from('profiles').select('*').order('created_at');
-  if (error || !data) {
-    document.getElementById('admin-users-list').innerHTML = '<div class="notice error"><div class="notice-icon">⚠️</div><div class="notice-body">Ошибка загрузки</div></div>';
+// ════════════════════════════════════════════════════════════
+const Admin = {
+  async load() {
+    const { data } = await db.from('profiles').select('*').order('created_at');
+    if (!data) { $('admin-users').innerHTML = '<div class="notice error"><div class="notice-body">Ошибка загрузки</div></div>'; return; }
+    const roleBadge = r => `<span class="badge badge-${r}">${r}</span>`;
+    $('admin-users').innerHTML = data.map(u => `
+      <div class="user-row">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            ${roleBadge(u.role)}
+            <span style="font-size:11px;color:var(--muted)">${u.created_at?.slice(0, 10) || ''}</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          ${u.id === state.user.id ? '<span style="font-size:11px;color:var(--muted)">Это ты</span>' : `
+            <select class="field-input field-select" style="font-size:12px;padding:6px 28px 6px 8px" onchange="Admin.setRole('${u.id}',this.value)">
+              <option ${u.role==='tech'    ?'selected':''} value="tech">tech</option>
+              <option ${u.role==='employer'?'selected':''} value="employer">employer</option>
+              <option ${u.role==='admin'   ?'selected':''} value="admin">admin</option>
+              <option ${u.role==='pending' ?'selected':''} value="pending">pending</option>
+              <option ${u.role==='suspended'?'selected':''} value="suspended">suspended</option>
+            </select>`}
+        </div>
+      </div>`).join('');
+  },
+
+  async setRole(userId, role) {
+    await db.from('profiles').update({ role }).eq('id', userId);
+    this.load();
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+// AUTH / APP
+// ════════════════════════════════════════════════════════════
+let isRegisterMode = false;
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  $('auth-sub').textContent         = isRegisterMode ? 'Создай аккаунт — администратор одобрит доступ' : 'Войди в свой аккаунт';
+  $('auth-btn').textContent         = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
+  $('auth-name-wrap').style.display = isRegisterMode ? 'block' : 'none';
+  $('auth-toggle').innerHTML        = isRegisterMode
+    ? 'Уже есть аккаунт? <span onclick="toggleAuthMode()">Войти</span>'
+    : 'Нет аккаунта? <span onclick="toggleAuthMode()">Зарегистрироваться</span>';
+  $('auth-error').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email    = $('auth-email').value.trim();
+  const password = $('auth-password').value;
+  if (!email || !password) { showAuthErr('Заполни email и пароль'); return; }
+
+  UI.setBtn('auth-btn', '<span class="spinner"></span> Загрузка…', true);
+  $('auth-error').style.display = 'none';
+  try {
+    if (isRegisterMode) {
+      const { error } = await db.auth.signUp({ email, password, options: { emailRedirectTo: REDIRECT_URL } });
+      if (error) throw error;
+      showAuthErr('✅ Проверь email — подтверди регистрацию.');
+    } else {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch (e) {
+    let msg = e.message || String(e);
+    if (msg.includes('Invalid login'))        msg = 'Неверный email или пароль';
+    if (msg.includes('already registered'))   msg = 'Email уже зарегистрирован. Войди.';
+    if (msg.includes('Password should'))      msg = 'Пароль минимум 6 символов';
+    showAuthErr(msg);
+  } finally {
+    UI.setBtn('auth-btn', isRegisterMode ? 'Зарегистрироваться' : 'Войти', false);
+  }
+}
+
+function showAuthErr(msg) {
+  $('auth-error').style.display = 'flex';
+  $('auth-error-text').textContent = msg;
+}
+
+const App = {
+  showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(`screen-${name}`)?.classList.add('active');
+    window.scrollTo(0, 0);
+    if (name === 'list')     renderList();
+    if (name === 'settings') Settings.render();
+    if (name === 'admin')    Admin.load();
+  },
+
+  async signOut() {
+    await db.auth.signOut();
+  },
+
+  async loadData() {
+    state.apiKey = localStorage.getItem('trc_apikey_' + state.user.id) || '';
+
+    const [{ data: companies }, { data: jobs }] = await Promise.all([
+      db.from('companies').select('*').eq('user_id', state.user.id).order('sort_order'),
+      db.from('jobs').select('*').eq('user_id', state.user.id).order('job_date', { ascending: false }),
+    ]);
+
+    if (!companies?.length) {
+      await db.rpc('insert_default_companies', { p_user_id: state.user.id });
+      const { data: c2 } = await db.from('companies').select('*').eq('user_id', state.user.id).order('sort_order');
+      state.companies = c2 || [];
+    } else {
+      state.companies = companies;
+    }
+    state.jobs = jobs || [];
+  },
+
+  async loadProfile() {
+    for (let i = 0; i < 5; i++) {
+      const { data } = await db.from('profiles').select('*').eq('id', state.user.id).single();
+      if (data) {
+        state.profile = data;
+        state.profile.tech_pct = data.tech_pct || 0.4;
+        return data;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    return null;
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+// CLIPBOARD PASTE (Cmd+V / Ctrl+V)
+// ════════════════════════════════════════════════════════════
+document.addEventListener('paste', async e => {
+  const screen = document.querySelector('.screen.active')?.id;
+  if (screen !== 'screen-form') return;
+  const items = Array.from(e.clipboardData?.items || []);
+  const imageItem = items.find(i => i.type.startsWith('image/'));
+  if (!imageItem) return;
+  e.preventDefault();
+  const file = imageItem.getAsFile();
+  if (!file) return;
+  // Default paste goes to HCP
+  await JobForm.pasteFile(file, 'hcp');
+});
+
+// ════════════════════════════════════════════════════════════
+// DRAG & DROP on upload zones
+// ════════════════════════════════════════════════════════════
+['hcp-zone', 'inv-zone'].forEach(zoneId => {
+  const zone = $(zoneId);
+  if (!zone) return;
+  const mode = zoneId === 'hcp-zone' ? 'hcp' : 'invoice';
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('active'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('active'));
+  zone.addEventListener('drop', async e => {
+    e.preventDefault();
+    zone.classList.remove('active');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/') || f.name.endsWith('.pdf'));
+    if (files.length) await JobForm._processFiles(files, mode);
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// AUTH STATE LISTENER — entry point
+// ════════════════════════════════════════════════════════════
+db.auth.onAuthStateChange(async (event, session) => {
+  $('loading').style.display = 'none';
+
+  if (!session) {
+    App.showScreen('auth');
     return;
   }
-  const roleBadge = r => `<span class="badge badge-${r}">${r}</span>`;
-  const roleMap = { admin:'admin', active:'active', pending:'pending', suspended:'suspended' };
 
-  document.getElementById('admin-users-list').innerHTML = data.map(u => `
-    <div class="user-row">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-          ${roleBadge(u.role)}
-          <span style="font-size:11px;color:var(--muted)">${u.created_at?.slice(0,10)||''}</span>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-        ${u.id === currentUser.id ? '<span style="font-size:11px;color:var(--muted)">Это ты</span>' : `
-          ${u.role !== 'active' ? `<button class="btn btn-green btn-sm" onclick="setUserRole('${u.id}','active')">✓ Одобрить</button>` : ''}
-          ${u.role !== 'suspended' ? `<button class="btn btn-red btn-sm" onclick="setUserRole('${u.id}','suspended')">✕ Блок</button>` : `<button class="btn btn-secondary btn-sm" onclick="setUserRole('${u.id}','active')">↩ Разблок</button>`}
-        `}
-      </div>
-    </div>`).join('');
-}
+  state.user = session.user;
+  const profile = await App.loadProfile();
 
-async function setUserRole(userId, role) {
-  const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
-  if (!error) loadAdminUsers();
-}
+  if (!profile) {
+    App.showScreen('auth');
+    showAuthErr('Профиль не найден. Обратись к администратору.');
+    return;
+  }
+
+  const role = profile.role;
+  if (role === 'pending')   { App.showScreen('pending');   return; }
+  if (role === 'suspended') { App.showScreen('suspended'); return; }
+
+  await App.loadData();
+  App.showScreen('list');
+
+  if (role === 'admin') $('admin-btn').style.display = 'flex';
+});
 </script>
 </body>
 </html>
