@@ -1049,6 +1049,9 @@ async function uploadFile(file, jobId, kind) {
 // ════════════════════════════════════════════════════════════
 // LIST RENDER
 // ════════════════════════════════════════════════════════════
+// Храним map id → job для быстрого доступа из onclick
+const _jobMap = {};
+
 function renderList() {
   const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
   const totals = state.jobs.reduce((acc, j) => {
@@ -1093,13 +1096,14 @@ function renderList() {
     return;
   }
 
+  state.jobs.forEach(j => { _jobMap[j.id] = j; });
   const paymentLabel = { unpaid: 'Не оплачено', partial: 'Частично', paid: 'Оплачено' };
 
   $('jobs-list').innerHTML = state.jobs.map(j => {
     const c = byId[j.company_id];
     const p = calcPayout(j, c);
     const ps = j.payment_status || 'unpaid';
-    return `<div class="job-item" onclick='JobForm.open(${JSON.stringify(j).replace(/'/g,"\\'")})'> 
+    return `<div class="job-item" onclick="JobForm.open(_jobMap['${j.id}'])">
       <div class="job-header">
         <div style="flex:1;min-width:0">
           <div class="job-meta">
@@ -1115,7 +1119,7 @@ function renderList() {
           <div style="font-size:11px;color:var(--muted)">Мне</div>
           <div class="job-amount ${p.payout < 0 ? 'red' : ''}">${fmt(p.payout)}</div>
           <button class="delete-btn" onclick="event.stopPropagation();deleteJob('${j.id}')">🗑</button>
-          <button class="delete-btn" style="font-size:14px" onclick="event.stopPropagation();History.open(${JSON.stringify(j).replace(/\\/g,'\\\\').replace(/'/g,"\\'")})" title="История">🕐</button>
+          <button class="delete-btn" style="font-size:14px" onclick="event.stopPropagation();History.open(_jobMap['${j.id}'])" title="История">🕐</button>
         </div>
       </div>
       <div class="job-footer">
