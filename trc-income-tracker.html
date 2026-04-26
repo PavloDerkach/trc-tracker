@@ -330,6 +330,22 @@ hr { border: none; border-top: 1px solid var(--border); }
 .chevron      { transition: transform .2s; display: inline-block; }
 .chevron.open { transform: rotate(180deg); }
 
+/* History timeline */
+.history-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.history-item:last-child { border-bottom: none; }
+.history-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.history-action { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; }
+.history-action.created        { background: var(--green-bg); color: var(--green); }
+.history-action.updated        { background: var(--blue-bg);  color: var(--blue);  }
+.history-action.payment_updated{ background: var(--yellow-bg);color: #92400e;      }
+.history-who  { font-size: 11px; color: var(--muted); }
+.history-when { font-size: 11px; color: var(--muted); margin-left: auto; }
+.history-diff { display: flex; flex-direction: column; gap: 4px; }
+.diff-row     { display: flex; gap: 8px; font-size: 12px; }
+.diff-field   { color: var(--muted); min-width: 120px; }
+.diff-old     { color: var(--red);   text-decoration: line-through; }
+.diff-new     { color: var(--green); font-weight: 600; }
+
 /* Payment panel in form */
 .payment-section { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
 .payment-header  { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--card); cursor: pointer; }
@@ -586,6 +602,22 @@ hr { border: none; border-top: 1px solid var(--border); }
   </div>
 </div>
 
+<!-- ── Job History ────────────────────────────────────────── -->
+<div id="screen-history" class="screen">
+  <div class="header">
+    <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
+    <div class="header-title">История изменений</div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="content">
+    <div class="card" id="history-job-info"></div>
+    <div class="card">
+      <div class="card-label" style="margin-bottom:14px">Лог изменений</div>
+      <div id="history-list"><div class="spinner dark" style="margin:20px auto;display:block"></div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Admin ──────────────────────────────────────────────── -->
 <div id="screen-admin" class="screen">
   <div class="header">
@@ -595,10 +627,10 @@ hr { border: none; border-top: 1px solid var(--border); }
   </div>
   <div class="content">
     <div class="info-box">
-      Одобряй пользователей, назначай роли.<br>
-      <strong>tech</strong> — техник (создаёт джобы).<br>
-      <strong>employer</strong> — работодатель (видит джобы своих техников, вносит оплаты).<br>
-      После назначения роли <strong>employer</strong> — привяжи к нему техников через «Привязать».
+      <strong>tech</strong> — техник, создаёт джобы.<br>
+      <strong>employer</strong> — работодатель, видит джобы техников и вносит оплаты.<br>
+      <strong>admin</strong> — полный доступ.<br><br>
+      Чтобы пригласить пользователя — отправь ему ссылку на приложение, он регистрируется, ты одобряешь здесь.
     </div>
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">Пользователи</div>
@@ -981,6 +1013,8 @@ const JobForm = {
         const { data, error } = await db.from('jobs').insert(row).select().single();
         if (error) throw error;
         jobId = data.id;
+        // Пишем в историю — создан
+        await db.rpc('log_job_created', { p_job_id: jobId }).catch(() => {});
       }
 
       // Upload attachments
@@ -1081,6 +1115,7 @@ function renderList() {
           <div style="font-size:11px;color:var(--muted)">Мне</div>
           <div class="job-amount ${p.payout < 0 ? 'red' : ''}">${fmt(p.payout)}</div>
           <button class="delete-btn" onclick="event.stopPropagation();deleteJob('${j.id}')">🗑</button>
+          <button class="delete-btn" style="font-size:14px" onclick="event.stopPropagation();History.open(${JSON.stringify(j).replace(/\\/g,'\\\\').replace(/'/g,"\\'")})" title="История">🕐</button>
         </div>
       </div>
       <div class="job-footer">
@@ -1169,38 +1204,157 @@ const Settings = {
 };
 
 // ════════════════════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════════════════════
+const History = {
+  currentJob: null,
+
+  async open(job) {
+    this.currentJob = job;
+    App.showScreen('history');
+
+    const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
+    const c = byId[job.company_id];
+    $('history-job-info').innerHTML = `
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${job.job_date || '—'} · #${job.job_id || '—'}</div>
+      <div style="font-size:17px;font-weight:700">${job.client_name || 'Без имени'}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${c?.name || '—'}</div>`;
+
+    const { data, error } = await db.from('job_history')
+      .select('*, changer:changed_by(email, full_name)')
+      .eq('job_id', job.id)
+      .order('changed_at', { ascending: false });
+
+    if (error || !data?.length) {
+      $('history-list').innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">История изменений пуста</div>`;
+      return;
+    }
+
+    const FIELDS = {
+      client_name:          'Клиент',
+      job_date:             'Дата',
+      services_price:       'Services Price',
+      parts_client_price:   'Parts (клиент)',
+      parts_purchase_price: 'Parts (закупка)',
+      services_description: 'Описание',
+      payment_status:       'Статус оплаты',
+      paid_amount:          'Выплачено',
+      payment_notes:        'Заметка оплаты',
+      notes:                'Notes',
+    };
+
+    const PAYMENT_LABELS = { unpaid: 'Не оплачено', partial: 'Частично', paid: 'Оплачено' };
+    const fmtVal = (k, v) => {
+      if (v == null) return '—';
+      if (k === 'payment_status') return PAYMENT_LABELS[v] || v;
+      if (['services_price','parts_client_price','parts_purchase_price','paid_amount'].includes(k)) return fmt(Number(v));
+      return String(v);
+    };
+
+    const actionLabel = { created: 'Создан', updated: 'Изменён', payment_updated: 'Оплата' };
+
+    $('history-list').innerHTML = data.map((h, idx) => {
+      const who  = h.changer?.full_name || h.changer?.email || 'Неизвестно';
+      const when = new Date(h.changed_at).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+      const snap = h.snapshot;
+
+      // Считаем diff с текущей версией или следующей записью в истории
+      const nextSnap = idx < data.length - 1 ? data[idx + 1].snapshot : null;
+      const current  = nextSnap || snap; // если нет следующей — показываем поля снимка
+
+      let diffs = '';
+      if (h.action !== 'created' && nextSnap) {
+        for (const [field, label] of Object.entries(FIELDS)) {
+          const oldVal = fmtVal(field, snap[field]);
+          const newVal = fmtVal(field, nextSnap[field]);
+          if (oldVal !== newVal) {
+            diffs += `<div class="diff-row">
+              <span class="diff-field">${label}</span>
+              <span class="diff-old">${oldVal}</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="diff-new">${newVal}</span>
+            </div>`;
+          }
+        }
+      }
+
+      return `<div class="history-item">
+        <div class="history-meta">
+          <span class="history-action ${h.action}">${actionLabel[h.action] || h.action}</span>
+          <span class="history-who">${who}</span>
+          <span class="history-when">${when}</span>
+        </div>
+        ${diffs ? `<div class="history-diff">${diffs}</div>` : h.action === 'created' ? '<div style="font-size:12px;color:var(--muted)">Запись создана</div>' : '<div style="font-size:12px;color:var(--muted)">Нет изменений в отслеживаемых полях</div>'}
+      </div>`;
+    }).join('');
+  },
+};
+
+// ════════════════════════════════════════════════════════════
 // ADMIN
 // ════════════════════════════════════════════════════════════
 const Admin = {
+  allUsers: [],
+
   async load() {
     const { data } = await db.from('profiles').select('*').order('created_at');
-    if (!data) { $('admin-users').innerHTML = '<div class="notice error"><div class="notice-body">Ошибка загрузки</div></div>'; return; }
+    if (!data) {
+      $('admin-users').innerHTML = '<div class="notice error"><div class="notice-body">Ошибка загрузки</div></div>';
+      return;
+    }
+    this.allUsers = data;
+    this.render(data);
+  },
+
+  render(users) {
     const roleBadge = r => `<span class="badge badge-${r}">${r}</span>`;
-    $('admin-users').innerHTML = data.map(u => `
-      <div class="user-row">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-            ${roleBadge(u.role)}
-            <span style="font-size:11px;color:var(--muted)">${u.created_at?.slice(0, 10) || ''}</span>
+    const techUsers = users.filter(u => u.role === 'tech' || u.role === 'active');
+
+    $('admin-users').innerHTML = users.map(u => {
+      const isSelf = u.id === state.user.id;
+      const employerSelect = u.role === 'tech' || u.role === 'active' ? `
+        <div style="margin-top:6px">
+          <select class="field-input field-select" style="font-size:12px;padding:6px 28px 6px 8px" onchange="Admin.setEmployer('${u.id}',this.value)">
+            <option value="">— без работодателя —</option>
+            ${users.filter(x => x.role === 'employer' || x.role === 'admin').map(e =>
+              `<option value="${e.id}" ${u.employer_id === e.id ? 'selected' : ''}>${e.email}</option>`
+            ).join('')}
+          </select>
+        </div>` : '';
+
+      return `<div class="user-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis">${u.email}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+              ${roleBadge(u.role)}
+              <span style="font-size:11px;color:var(--muted)">${u.created_at?.slice(0, 10) || ''}</span>
+              ${isSelf ? '<span style="font-size:11px;color:var(--muted)">(это ты)</span>' : ''}
+            </div>
           </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-          ${u.id === state.user.id ? '<span style="font-size:11px;color:var(--muted)">Это ты</span>' : `
-            <select class="field-input field-select" style="font-size:12px;padding:6px 28px 6px 8px" onchange="Admin.setRole('${u.id}',this.value)">
-              <option ${u.role==='tech'    ?'selected':''} value="tech">tech</option>
-              <option ${u.role==='employer'?'selected':''} value="employer">employer</option>
-              <option ${u.role==='admin'   ?'selected':''} value="admin">admin</option>
-              <option ${u.role==='pending' ?'selected':''} value="pending">pending</option>
-              <option ${u.role==='suspended'?'selected':''} value="suspended">suspended</option>
+          ${isSelf ? '' : `
+            <select class="field-input field-select" style="font-size:12px;padding:6px 28px 6px 8px;width:130px;flex-shrink:0"
+              onchange="Admin.setRole('${u.id}',this.value)">
+              <option ${u.role==='tech'      ?'selected':''} value="tech">tech</option>
+              <option ${u.role==='employer'  ?'selected':''} value="employer">employer</option>
+              <option ${u.role==='admin'     ?'selected':''} value="admin">admin</option>
+              <option ${u.role==='pending'   ?'selected':''} value="pending">pending</option>
+              <option ${u.role==='suspended' ?'selected':''} value="suspended">suspended</option>
             </select>`}
         </div>
-      </div>`).join('');
+        ${!isSelf ? employerSelect : ''}
+      </div>`;
+    }).join('');
   },
 
   async setRole(userId, role) {
     await db.from('profiles').update({ role }).eq('id', userId);
-    this.load();
+    await this.load();
+  },
+
+  async setEmployer(techId, employerId) {
+    await db.from('profiles').update({ employer_id: employerId || null }).eq('id', techId);
+    await this.load();
   },
 };
 
