@@ -1637,22 +1637,26 @@ const Settings = {
   },
 
   async save() {
+    const btn = $('settings-save-btn');
     const pct = Math.min(100, Math.max(1, parseInt($('s-tech-pct').value) || 40)) / 100;
     const apiKey = $('s-apikey').value.trim();
 
-    UI.setButton('settings-save-btn', '<span class="spinner"></span> Сохраняю…', true);
+    if (btn) { btn.innerHTML = '<span class="spinner"></span> Сохраняю…'; btn.disabled = true; }
+
     try {
-      state.apiKey = apiKey;
       await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
+      state.apiKey = apiKey;
       state.profile.tech_pct = pct;
       state.profile.gemini_api_key = apiKey;
-      UI.showToast('✅ Настройки сохранены');
-      UI.showScreen('list');
-      List.render();
+      if (btn) { btn.textContent = '✅ Сохранено!'; btn.disabled = false; }
+      setTimeout(() => {
+        if (btn) btn.textContent = 'Сохранить';
+        UI.showScreen('list');
+        List.render();
+      }, 1000);
     } catch (err) {
-      alert('Ошибка сохранения: ' + err.message);
-    } finally {
-      UI.setButton('settings-save-btn', 'Сохранить', false);
+      if (btn) { btn.textContent = 'Сохранить'; btn.disabled = false; }
+      alert('Ошибка сохранения: ' + err.message + '\n\nВозможно не запущена migration-v4.sql в Supabase.');
     }
   },
 
