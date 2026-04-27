@@ -1472,7 +1472,7 @@ const JobForm = {
       state.pending[mode].push(...files);
       this.updateCalc();
       this._renderAttachments();
-      UI.showNotice('success', this._buildSuccessMessage(data));
+      this._showReviewPanel(data, mode, files);
       $(textId).textContent = `✓ ${files.length} файл${files.length > 1 ? 'а' : ''} загружено`;
     } catch (err) {
       // Save files even on recognition failure
@@ -1514,6 +1514,51 @@ const JobForm = {
     if (data.leadSource) msg += ` — ${data.leadSource}`;
     if (data.supplier)   msg += ` — ${data.supplier}`;
     return msg;
+  },
+
+  /** Show parsed data review panel so user can verify extraction */
+  _showReviewPanel(data, mode, files) {
+    const fields = mode === 'hcp' ? [
+      ['Клиент',        data.clientName],
+      ['Дата',          data.jobDate],
+      ['Job ID',        data.jobId],
+      ['Lead Source',   data.leadSource],
+      ['Services Price',data.servicesPrice != null ? `$${data.servicesPrice}` : null],
+      ['Parts (клиент)',data.partsClientPrice != null ? `$${data.partsClientPrice}` : null],
+    ] : [
+      ['Parts Purchase Price', data.partsPurchasePrice != null ? `$${data.partsPurchasePrice}` : null],
+      ['Поставщик',     data.supplier],
+    ];
+
+    const rows = fields
+      .filter(([, v]) => v != null)
+      .map(([k, v]) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:12px">
+        <span style="color:var(--muted)">${escapeHtml(k)}</span>
+        <span style="font-weight:600;text-align:right">${escapeHtml(String(v))}</span>
+      </div>`).join('');
+
+    // Show thumbnail of first image for visual comparison
+    let thumb = '';
+    if (files[0] && files[0].type?.startsWith('image/')) {
+      const url = URL.createObjectURL(files[0]);
+      thumb = `<img src="${url}" style="width:100%;max-height:140px;object-fit:contain;border-radius:6px;margin-bottom:8px;background:#f0efec" onload="setTimeout(()=>URL.revokeObjectURL(this.src),5000)">`;
+    }
+
+    const el = $('form-notice');
+    el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:var(--rs);padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:#166534">✅ Данные извлечены — проверь</span>
+        <button onclick="this.closest('[style]').remove();$('form-notice').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:16px;color:#166534;padding:0">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">
+        <div>${thumb}<div style="font-size:11px;color:var(--muted);text-align:center">Исходное изображение</div></div>
+        <div>${rows}</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#166534;background:rgba(22,101,52,.08);padding:6px 10px;border-radius:6px">
+        Если данные некорректны — отредактируй поля вручную перед сохранением.
+      </div>
+    </div>`;
+    el.style.display = 'block';
   },
 
   /* ── Attachments display ────────────────────────────── */
