@@ -659,12 +659,12 @@ hr { border: none; border-top: 1px solid var(--border); }
 </div>
 
 <script>
-'use strict';
+
 
 /* ════════════════════════════════════════════════════════════
  * CONFIGURATION
  * ════════════════════════════════════════════════════════════ */
-const CONFIG = Object.freeze({
+const CONFIG = {
   SUPABASE_URL: 'https://kyiixiwlsffpjzrojoaq.supabase.co',
   SUPABASE_KEY: 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6',
   GEMINI_MODEL: 'gemini-2.5-flash',
@@ -674,22 +674,22 @@ const CONFIG = Object.freeze({
   PROFILE_LOAD_RETRIES: 5,
   PROFILE_LOAD_DELAY_MS: 1500,
   DEFAULT_TECH_PCT: 0.40,
-});
+};
 
-const ROLES = Object.freeze({
+const ROLES = {
   ADMIN: 'admin', TECH: 'tech', EMPLOYER: 'employer',
   PENDING: 'pending', SUSPENDED: 'suspended',
-});
+};
 
-const PAYMENT_STATUS = Object.freeze({ UNPAID: 'unpaid', PARTIAL: 'partial', PAID: 'paid' });
+const PAYMENT_STATUS = { UNPAID: 'unpaid', PARTIAL: 'partial', PAID: 'paid' };
 
-const PAYMENT_LABELS = Object.freeze({
+const PAYMENT_LABELS = {
   [PAYMENT_STATUS.UNPAID]:  'Не оплачено',
   [PAYMENT_STATUS.PARTIAL]: 'Частично',
   [PAYMENT_STATUS.PAID]:    'Оплачено',
-});
+};
 
-const VIEW_MODE = Object.freeze({ GRID: 'grid', MONTH: 'month' });
+const VIEW_MODE = { GRID: 'grid', MONTH: 'month' };
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
@@ -1286,7 +1286,7 @@ const List = {
     const groups = {};
     for (const job of state.jobs) {
       const key = (job.job_date || '0000-00').slice(0, 7);
-      (groups[key] ||= []).push(job);
+      (groups[key] = groups[key] || []).push(job);
     }
     return groups;
   },
