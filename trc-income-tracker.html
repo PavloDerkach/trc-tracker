@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRC Income Tracker</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <style>
 /* ════════════════════════════════════════════════════════════
    DESIGN TOKENS
@@ -798,8 +798,27 @@ function calculatePayout(job, company) {
 }
 
 /* ════════════════════════════════════════════════════════════
- * STORAGE — user-scoped localStorage wrapper
+ * API KEY STORAGE — three-tier persistence
+ * Tier 1: Supabase profile (cross-device, survives incognito)
+ * Tier 2: localStorage   (survives browser restarts in regular mode)
+ * Tier 3: sessionStorage (survives page refreshes in incognito)
  * ════════════════════════════════════════════════════════════ */
+const ApiKeyStore = {
+  KEY: 'trc_gemini_key',
+
+  save(key) {
+    if (!key) return;
+    try { localStorage.setItem(this.KEY, key); }   catch {}
+    try { sessionStorage.setItem(this.KEY, key); } catch {}
+  },
+
+  load() {
+    let key = '';
+    try { key = localStorage.getItem(this.KEY)   || key; } catch {}
+    try { key = sessionStorage.getItem(this.KEY) || key; } catch {}
+    return key;
+  },
+};
 const Storage = {
   _key(key) { return `trc_${key}_${state.user?.id || 'anon'}`; },
 
@@ -1617,7 +1636,7 @@ const Settings = {
   render() {
     const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
     $('s-tech-pct').value = techPct;
-    $('s-apikey').value = state.apiKey;
+    $('s-apikey').value = state.apiKey || '';
     $('settings-pct-label').textContent = `${techPct}%`;
 
     $('companies-list').innerHTML = state.companies.map(c => `
@@ -1643,21 +1662,33 @@ const Settings = {
 
     if (btn) { btn.innerHTML = '<span class="spinner"></span> Сохраняю…'; btn.disabled = true; }
 
+    // Always save to local/session storage as fallback (works in incognito for session)
+    if (apiKey) ApiKeyStore.save(apiKey);
+    state.apiKey = apiKey;
+
     try {
+      // Try saving to Supabase (requires migration-v4.sql to be run)
       await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
-      state.apiKey = apiKey;
       state.profile.tech_pct = pct;
       state.profile.gemini_api_key = apiKey;
-      if (btn) { btn.textContent = '✅ Сохранено!'; btn.disabled = false; }
-      setTimeout(() => {
-        if (btn) btn.textContent = 'Сохранить';
-        UI.showScreen('list');
-        List.render();
-      }, 1000);
     } catch (err) {
-      if (btn) { btn.textContent = 'Сохранить'; btn.disabled = false; }
-      alert('Ошибка сохранения: ' + err.message + '\n\nВозможно не запущена migration-v4.sql в Supabase.');
+      // Column may not exist yet — save only tech_pct
+      try {
+        await Api.updateProfile(state.user.id, { tech_pct: pct });
+        state.profile.tech_pct = pct;
+      } catch (e2) {
+        if (btn) { btn.textContent = 'Сохранить'; btn.disabled = false; }
+        alert('Ошибка сохранения: ' + e2.message);
+        return;
+      }
     }
+
+    if (btn) { btn.textContent = '✅ Сохранено!'; btn.disabled = false; }
+    setTimeout(() => {
+      if (btn) btn.textContent = 'Сохранить';
+      UI.showScreen('list');
+      List.render();
+    }, 1000);
   },
 
   async addCompany() {
@@ -1827,14 +1858,16 @@ const History = {
   FIELD_LABELS: {
     client_name:          'Клиент',
     job_date:             'Дата',
+    job_id:               'Job ID',
+    company_id:           'Lead Source',
+    services_description: 'Описание работ',
     services_price:       'Services Price',
     parts_client_price:   'Parts (клиент)',
     parts_purchase_price: 'Parts (закупка)',
-    services_description: 'Описание',
+    notes:                'Notes',
     payment_status:       'Статус оплаты',
     paid_amount:          'Выплачено',
     payment_notes:        'Заметка оплаты',
-    notes:                'Notes',
   },
 
   ACTION_LABELS: {
@@ -1843,13 +1876,15 @@ const History = {
     payment_updated: 'Оплата',
   },
 
+  _currentJob: null,
+
   async open(job) {
+    this._currentJob = job;
     UI.showScreen('history');
     this._renderJobInfo(job);
-
     try {
       const entries = await Api.fetchJobHistory(job.id);
-      this._renderEntries(entries);
+      this._renderEntries(entries, job);
     } catch (err) {
       $('history-list').innerHTML = `<div class="notice error"><div class="notice-icon">⚠️</div><div class="notice-body">${escapeHtml(err.message)}</div></div>`;
     }
@@ -1865,31 +1900,38 @@ const History = {
       <div style="font-size:12px;color:var(--muted);margin-top:2px">${company ? escapeHtml(company.name) : '—'}</div>`;
   },
 
-  _renderEntries(entries) {
+  _renderEntries(entries, currentJob) {
     if (!entries.length) {
       $('history-list').innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">История изменений пуста</div>`;
       return;
     }
+    // entries sorted DESC (newest first)
+    // entries[i].snapshot = state BEFORE entries[i] change
+    // To show what changed IN entries[i]:
+    //   old = entries[i].snapshot
+    //   new = entries[i-1].snapshot  (for i>0) or currentJob (for i=0, newest)
     $('history-list').innerHTML = entries.map((entry, idx) => {
-      const next = idx < entries.length - 1 ? entries[idx + 1] : null;
-      return this._renderEntry(entry, next);
+      const newerState = idx === 0 ? currentJob : entries[idx - 1].snapshot;
+      return this._renderEntry(entry, newerState);
     }).join('');
   },
 
-  _renderEntry(entry, nextEntry) {
-    const who   = entry.changer?.full_name || entry.changer?.email || 'Неизвестно';
-    const when  = new Date(entry.changed_at).toLocaleString('ru-RU', {
+  _renderEntry(entry, newerState) {
+    const who  = entry.changer?.full_name || entry.changer?.email || 'Неизвестно';
+    const when = new Date(entry.changed_at).toLocaleString('ru-RU', {
       day: '2-digit', month: '2-digit', year: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
-    const diffs = (entry.action !== 'created' && nextEntry)
-      ? this._computeDiff(entry.snapshot, nextEntry.snapshot)
-      : '';
-    const body = diffs
-      ? `<div class="history-diff">${diffs}</div>`
-      : (entry.action === 'created'
-          ? '<div style="font-size:12px;color:var(--muted)">Запись создана</div>'
-          : '<div style="font-size:12px;color:var(--muted)">Нет изменений в отслеживаемых полях</div>');
+
+    let body;
+    if (entry.action === 'created') {
+      body = '<div style="font-size:12px;color:var(--muted)">Запись создана</div>';
+    } else {
+      const diffs = newerState ? this._computeDiff(entry.snapshot, newerState) : '';
+      body = diffs
+        ? `<div class="history-diff">${diffs}</div>`
+        : '<div style="font-size:12px;color:var(--muted)">Нет изменений</div>';
+    }
 
     return `<div class="history-item">
       <div class="history-meta">
@@ -1902,6 +1944,7 @@ const History = {
   },
 
   _computeDiff(oldSnap, newSnap) {
+    if (!oldSnap || !newSnap) return '';
     const rows = [];
     for (const [field, label] of Object.entries(this.FIELD_LABELS)) {
       const oldVal = this._formatValue(field, oldSnap[field]);
@@ -1919,8 +1962,12 @@ const History = {
   },
 
   _formatValue(field, value) {
-    if (value == null) return '—';
+    if (value == null || value === '') return '—';
     if (field === 'payment_status') return PAYMENT_LABELS[value] || value;
+    if (field === 'company_id') {
+      const c = state.companies.find(c => c.id === value);
+      return c ? c.name : String(value);
+    }
     const moneyFields = ['services_price', 'parts_client_price', 'parts_purchase_price', 'paid_amount'];
     if (moneyFields.includes(field)) return fmtMoney(Number(value));
     return String(value);
@@ -1960,7 +2007,10 @@ const App = {
 
     state.profile = profile;
     state.profile.tech_pct = profile.tech_pct || CONFIG.DEFAULT_TECH_PCT;
-    state.apiKey = profile.gemini_api_key || '';
+    // Load API key: Supabase (best) → localStorage → sessionStorage
+    state.apiKey = profile.gemini_api_key || ApiKeyStore.load() || '';
+    // Sync back to local storage if loaded from Supabase
+    if (profile.gemini_api_key) ApiKeyStore.save(profile.gemini_api_key);
 
     if (profile.role === ROLES.PENDING)   { UI.showScreen('pending');   return; }
     if (profile.role === ROLES.SUSPENDED) { UI.showScreen('suspended'); return; }
