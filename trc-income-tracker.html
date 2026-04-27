@@ -461,27 +461,26 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <!-- HCP screenshots -->
-    <div class="card">
-      <div class="card-label">1. Скриншоты джоба</div>
-      <label class="upload-zone" id="hcp-zone">
-        <input type="file" id="hcp-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'hcp')">
-        <div class="upload-icon">📸</div>
-        <div class="upload-text" id="hcp-text">Фото / скриншот карточки HCP</div>
-        <div class="upload-hint">Клиент, дата, стоимость, lead source</div>
-      </label>
-      <div class="paste-hint">или <kbd>⌘V</kbd> / <kbd>Ctrl+V</kbd> для вставки из буфера</div>
-    </div>
-
-    <!-- Invoice -->
-    <div class="card" style="border-color:var(--yellow-bd);background:var(--yellow-bg)">
-      <div class="card-label" style="color:#b45309">2. Инвойс на закупку з/ч <span style="font-weight:400;text-transform:none;font-size:10px">(Parts Purchase Price)</span></div>
-      <label class="upload-zone yellow-zone" id="inv-zone">
-        <input type="file" id="inv-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'invoice')">
-        <div class="upload-icon">📄</div>
-        <div class="upload-text yellow" id="inv-text">Загрузить инвойс</div>
-        <div class="upload-hint">Закупочная стоимость → Net Profit Pool</div>
-      </label>
+    <!-- Upload row (compact) -->
+    <div class="card" style="padding:12px 16px">
+      <div style="display:flex;gap:10px;align-items:center">
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8f7f4;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:border-color .15s" id="hcp-zone">
+          <input type="file" id="hcp-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'hcp')" style="display:none">
+          <span style="font-size:18px">📸</span>
+          <div style="min-width:0">
+            <div class="upload-text" id="hcp-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">HCP скриншот</div>
+            <div style="font-size:10px;color:var(--muted)">или <kbd style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:10px">⌘V</kbd></div>
+          </div>
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fffbee;border:1.5px solid var(--yellow-bd);border-radius:var(--rs);cursor:pointer;transition:border-color .15s" id="inv-zone">
+          <input type="file" id="inv-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'invoice')" style="display:none">
+          <span style="font-size:18px">📄</span>
+          <div style="min-width:0">
+            <div class="upload-text yellow" id="inv-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Инвойс з/ч</div>
+            <div style="font-size:10px;color:var(--muted)">Parts Purchase Price</div>
+          </div>
+        </label>
+      </div>
     </div>
 
     <div id="form-notice" style="display:none"></div>
@@ -1536,11 +1535,8 @@ const JobForm = {
     const container = $('attached-files');
     if (!items.length) { container.style.display = 'none'; return; }
     container.style.display = 'block';
-    container.innerHTML = `<div class="card">
-      <div class="card-label">Прикреплённые файлы (${items.length})</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${items.map(item => this._renderAttachmentRow(item)).join('')}
-      </div>
+    container.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px">
+      ${items.map(item => this._renderAttachmentRow(item)).join('')}
     </div>`;
   },
 
@@ -1559,14 +1555,16 @@ const JobForm = {
       ? `JobForm.deleteSaved('${item.id}','${escapeHtml(item.storage_path)}')`
       : `JobForm.removePending('${item.kind}',${item.idx})`;
 
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f8f7f4;border-radius:8px;border:1px solid var(--border)">
-      <span style="font-size:20px">${icon}</span>
+    const shortName = name ? (name.length > 28 ? name.slice(0, 25) + '…' : name) : 'Файл';
+
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8f7f4;border-radius:var(--rs);border:1px solid var(--border)">
+      <span style="font-size:14px;flex-shrink:0">${icon}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name) || 'Файл'}</div>
-        <div style="font-size:11px;color:${color}">${label}${item.isSaved ? '' : ' · не сохранён'}</div>
+        <span style="font-size:12px;font-weight:600">${escapeHtml(shortName)}</span>
+        <span style="font-size:11px;color:${color};margin-left:6px">${label}${item.isSaved ? '' : ' ·  не сохр.'}</span>
       </div>
-      <button class="btn btn-icon" style="padding:6px" onclick="${viewAction}">👁</button>
-      <button class="btn btn-icon" style="padding:6px;color:var(--red)" onclick="${removeAction}">🗑</button>
+      <button class="btn btn-icon" style="padding:4px;font-size:13px" onclick="${viewAction}">👁</button>
+      <button class="btn btn-icon" style="padding:4px;font-size:13px;color:var(--red)" onclick="${removeAction}">🗑</button>
     </div>`;
   },
 
