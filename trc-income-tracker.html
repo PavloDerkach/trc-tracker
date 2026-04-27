@@ -633,6 +633,9 @@ hr { border: none; border-top: 1px solid var(--border); }
       <strong>employer</strong> — работодатель, видит джобы своих техников и вносит оплаты.<br>
       <strong>admin</strong> — полный доступ.
     </div>
+    <button class="btn btn-primary" onclick="Admin.invite()" style="border-radius:var(--rs)">
+      ✉️ Пригласить пользователя
+    </button>
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">Пользователи</div>
       <div id="admin-users"></div>
@@ -1617,10 +1620,10 @@ const Settings = {
     const apiKey = $('s-apikey').value.trim();
 
     state.apiKey = apiKey;
-    Storage.set('apikey', apiKey);
 
-    await Api.updateProfile(state.user.id, { tech_pct: pct });
+    await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
     state.profile.tech_pct = pct;
+    state.profile.gemini_api_key = apiKey;
 
     UI.showScreen('list');
     List.render();
@@ -1697,6 +1700,35 @@ const Admin = {
     await this.load();
   },
 
+  async invite() {
+    const email = prompt('Email нового пользователя:');
+    if (!email?.trim()) return;
+
+    const roleOptions = 'tech\nemployer\nadmin';
+    const role = prompt(`Роль (введи одну из):\n${roleOptions}`, 'tech');
+    if (!role || !['tech', 'employer', 'admin', 'pending'].includes(role.trim())) {
+      alert('Неверная роль. Допустимые: tech, employer, admin, pending');
+      return;
+    }
+
+    try {
+      const { error } = await sb.rpc('admin_pre_invite', {
+        p_email: email.trim().toLowerCase(),
+        p_role:  role.trim(),
+      });
+      if (error) throw error;
+
+      // Copy invite link to clipboard
+      const link = CONFIG.REDIRECT_URL;
+      await navigator.clipboard?.writeText(link).catch(() => {});
+
+      alert(`✅ Пользователь ${email} будет иметь роль "${role}" при регистрации.\n\nСсылка для регистрации скопирована в буфер:\n${link}`);
+      await this.load();
+    } catch (err) {
+      alert('Ошибка: ' + err.message);
+    }
+  },
+
   /* ── Private ────────────────────────────────────────── */
 
   _render() {
@@ -1705,9 +1737,7 @@ const Admin = {
 
   _renderUserRow(user) {
     const isSelf = user.id === state.user.id;
-    const employerSection = (user.role === ROLES.TECH || user.role === 'active')
-      ? this._renderEmployerSelect(user)
-      : '';
+    const hasAuthId = user.email && !user.email.includes('@') === false;
 
     const roleSelect = isSelf ? '' : `
       <select class="field-input field-select"
@@ -1718,13 +1748,22 @@ const Admin = {
         ).join('')}
       </select>`;
 
+    const employerSection = (user.role === ROLES.TECH || user.role === 'active')
+      ? this._renderEmployerSelect(user)
+      : '';
+
+    const isPending = !user.created_at || user.role === ROLES.PENDING;
+    const statusNote = isPending
+      ? '<span style="font-size:11px;color:var(--yellow)">⏳ ожидает регистрации</span>'
+      : `<span style="font-size:11px;color:var(--muted)">${(user.created_at || '').slice(0, 10)}</span>`;
+
     return `<div class="user-row" style="flex-direction:column;align-items:stretch;gap:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(user.email)}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap">
             <span class="badge badge-${user.role}">${user.role}</span>
-            <span style="font-size:11px;color:var(--muted)">${(user.created_at || '').slice(0, 10)}</span>
+            ${statusNote}
             ${isSelf ? '<span style="font-size:11px;color:var(--muted)">(это ты)</span>' : ''}
           </div>
         </div>
@@ -1737,6 +1776,7 @@ const Admin = {
   _renderEmployerSelect(techUser) {
     const employers = this.users.filter(u => u.role === ROLES.EMPLOYER || u.role === ROLES.ADMIN);
     return `<div style="margin-top:6px">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Работодатель</label>
       <select class="field-input field-select"
               style="font-size:12px;padding:6px 28px 6px 8px"
               onchange="Admin.setEmployer('${techUser.id}',this.value)">
@@ -1878,7 +1918,6 @@ const App = {
     }
 
     state.user = session.user;
-    state.apiKey = Storage.get('apikey') || '';
 
     const profile = await this._loadProfileWithRetry();
     if (!profile) {
@@ -1890,6 +1929,7 @@ const App = {
 
     state.profile = profile;
     state.profile.tech_pct = profile.tech_pct || CONFIG.DEFAULT_TECH_PCT;
+    state.apiKey = profile.gemini_api_key || '';
 
     if (profile.role === ROLES.PENDING)   { UI.showScreen('pending');   return; }
     if (profile.role === ROLES.SUSPENDED) { UI.showScreen('suspended'); return; }
