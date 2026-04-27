@@ -361,6 +361,14 @@ hr { border: none; border-top: 1px solid var(--border); }
   <div class="spinner dark" style="width:32px;height:32px;border-width:3px"></div>
 </div>
 
+<!-- Toast notification -->
+<div id="toast" style="
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1a1814;color:#fff;padding:12px 20px;border-radius:100px;
+  font-size:14px;font-weight:600;white-space:nowrap;
+  opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;
+"></div>
+
 <!-- ════════════════════════════════════════════════════════
      AUTH
      ════════════════════════════════════════════════════════ -->
@@ -614,7 +622,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <button class="btn btn-secondary btn-sm" onclick="Auth.signOut()" style="width:auto;align-self:flex-start">🚪 Выйти</button>
   </div>
   <div class="bottom-bar">
-    <button class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
+    <button id="settings-save-btn" class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
   </div>
 </div>
 
@@ -1049,6 +1057,19 @@ const UI = {
       </div>
     </div>`;
     el.style.display = 'block';
+  },
+
+  /** Show a brief toast notification */
+  showToast(message, durationMs = 2500) {
+    const el = $('toast');
+    el.textContent = message;
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(-50%) translateY(20px)';
+    }, durationMs);
   },
 
   hideNotice() { $('form-notice').style.display = 'none'; },
@@ -1619,14 +1640,20 @@ const Settings = {
     const pct = Math.min(100, Math.max(1, parseInt($('s-tech-pct').value) || 40)) / 100;
     const apiKey = $('s-apikey').value.trim();
 
-    state.apiKey = apiKey;
-
-    await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
-    state.profile.tech_pct = pct;
-    state.profile.gemini_api_key = apiKey;
-
-    UI.showScreen('list');
-    List.render();
+    UI.setButton('settings-save-btn', '<span class="spinner"></span> Сохраняю…', true);
+    try {
+      state.apiKey = apiKey;
+      await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
+      state.profile.tech_pct = pct;
+      state.profile.gemini_api_key = apiKey;
+      UI.showToast('✅ Настройки сохранены');
+      UI.showScreen('list');
+      List.render();
+    } catch (err) {
+      alert('Ошибка сохранения: ' + err.message);
+    } finally {
+      UI.setButton('settings-save-btn', 'Сохранить', false);
+    }
   },
 
   async addCompany() {
