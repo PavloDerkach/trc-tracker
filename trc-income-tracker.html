@@ -943,9 +943,21 @@ const Api = {
  * ════════════════════════════════════════════════════════════ */
 const Gemini = {
   PROMPTS: {
-    hcp: `Extract from HouseCall Pro job screenshot. Return JSON only, no prose:
-{"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null}`,
-    invoice: `Extract from parts purchase invoice. Return JSON only, no prose:
+    hcp: `You are a strict data extraction tool. Extract ONLY values that are EXPLICITLY and CLEARLY visible in this HouseCall Pro screenshot. Never guess, generate, paraphrase or infer.
+
+Rules:
+- jobId: The COMPLETE HCP job number after "Job #" (8-9 digits like 97230403). Never use partial numbers.
+- servicesDescription: Copy EXACT text only if clearly readable. If not clearly visible, return null.
+- servicesPrice: Sum of labor/service line items. Number only, no $.
+- partsClientPrice: Sum of parts/materials charged to client. Number only, no $.
+- paymentStatus: "paid" if "Paid in full" visible, "partial" if partial payment shown, "unpaid" if balance due or nothing shown.
+- leadSource: Company name shown as lead source or job source if visible.
+
+Return ONLY valid JSON, no other text:
+{"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null,"paymentStatus":"paid"|"partial"|"unpaid"|null}`,
+
+    invoice: `Strict data extraction from a parts purchase invoice. Return ONLY valid JSON, no other text.
+partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise the total amount. Number only, no $.
 {"partsPurchasePrice":number|null,"supplier":string|null}`,
   },
 
@@ -1492,6 +1504,7 @@ const JobForm = {
       if (data.servicesDescription)    set('f-services-desc',   data.servicesDescription);
       if (data.servicesPrice    != null) set('f-services-price',data.servicesPrice);
       if (data.partsClientPrice != null) set('f-parts-client',  data.partsClientPrice);
+      if (data.paymentStatus)            { set('f-payment-status', data.paymentStatus); this.updatePaymentBadge(); }
       if (data.leadSource) {
         const match = this._matchCompany(data.leadSource);
         if (match) set('f-company', match.id);
@@ -1525,6 +1538,7 @@ const JobForm = {
       ['Lead Source',   data.leadSource],
       ['Services Price',data.servicesPrice != null ? `$${data.servicesPrice}` : null],
       ['Parts (клиент)',data.partsClientPrice != null ? `$${data.partsClientPrice}` : null],
+      ['Статус оплаты', data.paymentStatus ? PAYMENT_LABELS[data.paymentStatus] : null],
     ] : [
       ['Parts Purchase Price', data.partsPurchasePrice != null ? `$${data.partsPurchasePrice}` : null],
       ['Поставщик',     data.supplier],
