@@ -1359,11 +1359,19 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
   async analyze(files, mode) {
     const prompt = this.PROMPTS[mode];
     const merged = {};
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       const { mimeType, data } = await this.fileToBase64(file);
-      const parts = [{ inlineData: { mimeType, data } }, { text: prompt }];
+      // For HCP mode: second and later files should NOT override clientName
+      // (they may show technician name or other info, not the customer)
+      const filePrompt = (mode === 'hcp' && i > 0)
+        ? prompt + '\n\nNOTE: This is an additional screenshot. Only extract fields that are EMPTY so far. Do NOT extract clientName from this image.'
+        : prompt;
+      const parts = [{ inlineData: { mimeType, data } }, { text: filePrompt }];
       const parsed = this._parseJson(await this._call(parts));
       for (const [key, value] of Object.entries(parsed)) {
+        // First file always wins for clientName; other fields take first non-null
+        if (key === 'clientName' && i > 0) continue;
         if (value != null && merged[key] == null) merged[key] = value;
       }
     }
