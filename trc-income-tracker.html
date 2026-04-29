@@ -439,6 +439,12 @@ hr { border: none; border-top: 1px solid var(--border); }
 .payment-badge.paid    { background: var(--green-bg);  color: var(--green); }
 .payment-badge.clarify { background: var(--blue-bg);   color: var(--blue);  }
 
+/* Employer status badge */
+.employer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.employer-badge.pending     { background: #f0efec; color: #6b6660; }
+.employer-badge.in_progress { background: #fff4e6; color: #a05000; }
+.employer-badge.done        { background: #f3e8ff; color: #6b21a8; }
+
 /* ════════════════════════════════════════════════════════════
    BUTTONS
    ════════════════════════════════════════════════════════════ */
@@ -841,6 +847,27 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
     </div>
 
+    <!-- Employer status -->
+    <div class="payment-section">
+      <div class="payment-header" onclick="UI.toggleSection('employer-body','employer-chevron')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">5. Статус обработки работодателем</span>
+          <span id="employer-badge-header" class="employer-badge pending">Не начато</span>
+        </div>
+        <span class="chevron open" id="employer-chevron">▾</span>
+      </div>
+      <div class="payment-body collapsible-body open" id="employer-body">
+        <div>
+          <label class="field-label">Статус</label>
+          <select id="f-employer-status" class="field-input field-select" onchange="JobForm.updateEmployerBadge()">
+            <option value="pending">Не начато</option>
+            <option value="in_progress">В процессе</option>
+            <option value="done">Обработано</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
     <!-- Calc -->
     <div class="calc-card">
       <div class="calc-header" onclick="UI.toggleSection('calc-body','calc-chevron')">
@@ -993,6 +1020,13 @@ const PAYMENT_LABELS = {
 };
 
 const VIEW_MODE = { GRID: 'grid', MONTH: 'month' };
+
+const EMPLOYER_STATUS = { PENDING: 'pending', IN_PROGRESS: 'in_progress', DONE: 'done' };
+const EMPLOYER_STATUS_LABELS = {
+  pending:     'Не начато',
+  in_progress: 'В процессе',
+  done:        'Обработано',
+};
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
@@ -1603,6 +1637,7 @@ const List = {
       <div class="mini-card-meta">${company ? escapeHtml(company.name) : '<span style="color:var(--red)">нет компании</span>'}</div>
       <div class="mini-card-foot">
         <span class="payment-badge ${ps}">${PAYMENT_LABELS[ps]}${partialNote}</span>
+        <span class="employer-badge ${job.employer_status || 'pending'}">${EMPLOYER_STATUS_LABELS[job.employer_status || 'pending']}</span>
         <div class="mini-card-actions">
           <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();History.open(state.jobMap['${job.id}'])" title="История">🕐</button>
           <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();App.deleteJob('${job.id}')" title="Удалить">🗑</button>
@@ -1692,6 +1727,7 @@ const JobForm = {
 
     this.updateCalc();
     this.updatePaymentBadge();
+    this.updateEmployerBadge();
     UI.showScreen('form');
   },
 
@@ -1716,6 +1752,7 @@ const JobForm = {
     set('f-payment-status',  job.payment_status ?? PAYMENT_STATUS.UNPAID);
     set('f-paid-amount',     job.paid_amount);
     set('f-payment-notes',   job.payment_notes);
+    set('f-employer-status', job.employer_status ?? 'pending');
     if (job.id) this._loadAttachments(job.id);
   },
 
@@ -1726,6 +1763,7 @@ const JobForm = {
     set('f-date',           today());
     set('f-company',        '');
     set('f-payment-status', PAYMENT_STATUS.UNPAID);
+    set('f-employer-status', EMPLOYER_STATUS.PENDING);
   },
 
   /** Collect form inputs into a row object for DB insert/update */
@@ -1745,6 +1783,7 @@ const JobForm = {
       paid_amount:          parseFloat($('f-paid-amount').value) || 0,
       payment_notes:        $('f-payment-notes').value.trim() || null,
       paid_by:              state.user.id,
+      employer_status:      $('f-employer-status').value || 'pending',
     };
   },
 
@@ -2078,6 +2117,12 @@ const JobForm = {
     badge.textContent = PAYMENT_LABELS[status];
     badge.className = `payment-badge ${status}`;
     $('paid-amount-wrap').style.display = status === PAYMENT_STATUS.PAID ? 'none' : 'block';
+  },
+
+  updateEmployerBadge() {
+    const status = $('f-employer-status')?.value || EMPLOYER_STATUS.PENDING;
+    const badge = $('employer-badge-header');
+    if (badge) { badge.textContent = EMPLOYER_STATUS_LABELS[status]; badge.className = `employer-badge ${status}`; }
   },
 };
 
