@@ -1804,6 +1804,35 @@ const JobForm = {
     if (files.length) await this._processFiles(files, mode);
   },
 
+  _processFiles(files, mode) {
+    // Generate descriptive display names based on extracted data
+    // (called after analyze returns data)
+    return files;
+  },
+
+  _getDisplayName(file, mode, data, index) {
+    try {
+      if (mode === 'hcp') {
+        const jobId = data.jobId ? `#${data.jobId}` : null;
+        const client = data.clientName;
+        const price = data.servicesPrice != null || data.partsClientPrice != null
+          ? `$${((data.servicesPrice || 0) + (data.partsClientPrice || 0)).toFixed(2)}`
+          : null;
+        if (jobId && client) return `${jobId} · ${client}`;
+        if (jobId) return jobId;
+        if (client) return client;
+        if (price) return `HCP скрин · ${price}`;
+      } else {
+        const price = data.partsPurchasePrice != null ? `$${Number(data.partsPurchasePrice).toFixed(2)}` : null;
+        const supplier = data.supplier;
+        if (supplier && price) return `Инвойс · ${supplier} · ${price}`;
+        if (price) return `Инвойс · ${price}`;
+        if (supplier) return `Инвойс · ${supplier}`;
+      }
+    } catch {}
+    return file.name;
+  },
+
   async _processFiles(files, mode) {
     const textId = mode === 'hcp' ? 'hcp-text' : 'inv-text';
     $(textId).innerHTML = '<span class="spinner dark"></span> Распознаю…';
@@ -1812,6 +1841,10 @@ const JobForm = {
     try {
       const data = await Gemini.analyze(files, mode);
       this._applyExtractedData(data, mode);
+      // Attach display names based on extracted data
+      files.forEach((file, i) => {
+        file._displayName = this._getDisplayName(file, mode, data, i);
+      });
       state.pending[mode].push(...files);
       this.updateCalc();
       this._renderAttachments();
@@ -1937,7 +1970,7 @@ const JobForm = {
   },
 
   _renderAttachmentRow(item) {
-    const name  = item.isSaved ? item.file_name : item.file.name;
+    const name  = item.isSaved ? item.file_name : (item.file._displayName || item.file.name);
     const type  = item.isSaved ? item.mime_type : item.file.type;
     const isPdf = (type === 'application/pdf') || name?.endsWith('.pdf');
     const icon  = isPdf ? '📄' : '🖼';
