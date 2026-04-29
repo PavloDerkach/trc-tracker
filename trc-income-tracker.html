@@ -993,7 +993,7 @@ window.onunhandledrejection = function(e) {
 /* ════════════════════════════════════════════════════════════
  * LOCALIZATION
  * ════════════════════════════════════════════════════════════ */
-const TRANSLATIONS = {
+var TRANSLATIONS = {
   ru: {
     // App
     appTitle:        'TRC Income Tracker',
@@ -1012,8 +1012,8 @@ const TRANSLATIONS = {
     signUpLink:      'Зарегистрироваться',
     signUpSub:       'Создай аккаунт — администратор одобрит доступ',
     signInSub:       'Войди в свой аккаунт',
-    checkEmail:      T('checkEmail'),
-    fillFields:      T('fillFields'),
+    checkEmail:      '✅ Проверь email — подтверди регистрацию.',
+    fillFields:      'Заполни email и пароль',
     wrongPassword:   'Неверный email или пароль',
     alreadyReg:      'Email уже зарегистрирован. Войди.',
     weakPassword:    'Пароль минимум 6 символов',
@@ -1026,14 +1026,14 @@ const TRANSLATIONS = {
     signOut:         'Выйти',
 
     // Summary
-    myPayout:        T('myPayout'),
-    subtotal:        T('subtotal'),
-    commissions:     T('commissions'),
-    partsBuy:        T('partsBuy'),
-    netPool:         T('netPool'),
+    myPayout:        'Моя выплата',
+    subtotal:        'Subtotal',
+    commissions:     '− Комиссии',
+    partsBuy:        '− Закупка з/ч',
+    netPool:         '= Net Profit Pool',
     myShare:         '× {pct}% = Мне',
-    paid:            T('paid'),
-    balance:         T('balance'),
+    paid:            'Выплачено',
+    balance:         'Остаток',
     jobs:            '{n} джоб',
     jobs2:           '{n} джоба',
     jobs5:           '{n} джобов',
@@ -1041,8 +1041,8 @@ const TRANSLATIONS = {
     // List
     viewGrid:        'Сетка',
     viewMonth:       'По месяцам',
-    noJobs:          T('noJobs'),
-    noCompany:       T('noCompany'),
+    noJobs:          'Нет джобов. Нажми + чтобы добавить.',
+    noCompany:       'нет компании',
 
     // Form
     newJob:          'Новый джоб',
@@ -1083,7 +1083,7 @@ const TRANSLATIONS = {
 
     // Calc
     calcTitle:       'Расчёт выплаты',
-    totalMe:         T('totalMe'),
+    totalMe:         'ИТОГО МНЕ',
     leadComm:        '− Lead Commission ({pct})',
     myShareCalc:     '× {pct}% (моя доля)',
 
@@ -1092,7 +1092,7 @@ const TRANSLATIONS = {
     mySharePct:      'Моя доля',
     geminiKey:       'Gemini API Key',
     geminiFree:      'Бесплатно:',
-    addSupplier:     T('addSupplier'),
+    addSupplier:     '＋ Добавить поставщика',
     settingsSaved:   '✅ Сохранено!',
     settingsInfo:    '<strong>Commission %</strong> — доля поставщика от Subtotal (Services + Parts for Client).<br>Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>Твоя доля: <strong>{pct}%</strong> от Net Profit Pool.',
 
@@ -1114,9 +1114,9 @@ const TRANSLATIONS = {
 
     // History
     historyTitle:    'История изменений',
-    historyEmpty:    T('historyEmpty'),
-    created:         T('created'),
-    noChanges:       T('noChanges'),
+    historyEmpty:    'История изменений пуста',
+    created:         'Запись создана',
+    noChanges:       'Нет изменений',
 
     // Misc
     deleteJob:       'Удалить этот джоб?',
@@ -1124,9 +1124,9 @@ const TRANSLATIONS = {
     deleteError:     'Ошибка удаления: ',
     previewError:    'Предпросмотр недоступен: ',
     recognizing:     ' Распознаю…',
-    recognized:      T('recognized'),
-    reviewHint:      T('reviewHint'),
-    sourceImage:     T('sourceImage'),
+    recognized:      '✅ Данные извлечены — проверь',
+    reviewHint:      'Если данные некорректны — отредактируй поля вручную перед сохранением.',
+    sourceImage:     'Исходное изображение',
     noApiKey:        'Нет Gemini API Key — добавь в Настройках.',
     files1:          '{n} файл загружено',
     files2:          '{n} файла загружено',
@@ -1274,7 +1274,7 @@ const TRANSLATIONS = {
   },
 };
 
-let _lang = localStorage.getItem('trc_lang') || 'ru';
+var _lang = localStorage.getItem('trc_lang') || 'ru';
 
 function T(key, vars = {}) {
   let str = (TRANSLATIONS[_lang] || TRANSLATIONS.ru)[key] || key;
