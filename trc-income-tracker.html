@@ -997,13 +997,14 @@ const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','
  * STATE
  * ════════════════════════════════════════════════════════════ */
 const state = {
-  user:    null,    // Supabase auth user
-  profile: null,    // profiles row
+  user:    null,
+  profile: null,
   jobs:    [],
   companies: [],
-  jobMap:  {},      // id -> job (for fast onclick lookup)
+  jobMap:  {},
   apiKey:  '',
-  pending: { hcp: [], invoice: [] },  // files awaiting save
+  pending: { hcp: [], invoice: [] },
+  savedAttachments: [],   // attachments already saved in DB (shown when editing)
   editingJobId: null,
 };
 
@@ -1674,6 +1675,7 @@ const JobForm = {
   open(job) {
     state.editingJobId = job?.id ?? null;
     state.pending = { hcp: [], invoice: [] };
+    state.savedAttachments = [];
 
     $('form-title').textContent = job ? 'Редактировать' : 'Новый джоб';
     $('hcp-text').textContent   = 'Фото / скриншот карточки HCP';
@@ -1912,15 +1914,17 @@ const JobForm = {
 
   async _loadAttachments(jobId) {
     const items = await Api.fetchAttachments(jobId);
-    if (items.length) this._renderAttachmentsList(items.map(a => ({ ...a, isSaved: true })));
+    state.savedAttachments = items.map(a => ({ ...a, isSaved: true }));
+    this._renderAttachments();
   },
 
   _renderAttachments() {
-    const items = [
+    const saved   = state.savedAttachments;
+    const pending = [
       ...state.pending.hcp.map((file, i)     => ({ file, kind: 'hcp',     idx: i, isSaved: false })),
       ...state.pending.invoice.map((file, i) => ({ file, kind: 'invoice', idx: i, isSaved: false })),
     ];
-    this._renderAttachmentsList(items);
+    this._renderAttachmentsList([...saved, ...pending]);
   },
 
   _renderAttachmentsList(items) {
