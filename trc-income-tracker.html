@@ -1868,13 +1868,35 @@ const JobForm = {
       if (data.servicesDescription)    set('f-services-desc',   data.servicesDescription);
       if (data.servicesPrice    != null) set('f-services-price',data.servicesPrice);
       if (data.partsClientPrice != null) set('f-parts-client',  data.partsClientPrice);
-      if (data.leadSource) {
-        const match = this._matchCompany(data.leadSource);
-        if (match) set('f-company', match.id);
+
+      // Match company: first try explicit leadSource from Gemini,
+      // then scan all text fields for company name keywords
+      let match = data.leadSource ? this._matchCompany(data.leadSource) : null;
+      if (!match) {
+        const allText = [
+          data.leadSource,
+          data.servicesDescription,
+          data.clientName,
+        ].filter(Boolean).join(' ');
+        match = this._matchCompanyInText(allText);
       }
+      if (match) set('f-company', match.id);
+
     } else if (data.partsPurchasePrice != null) {
       set('f-parts-buy', data.partsPurchasePrice);
     }
+  },
+
+  /** Search for any company name keyword anywhere in a text block */
+  _matchCompanyInText(text) {
+    if (!text) return null;
+    const t = text.toLowerCase();
+    // Sort companies by name length desc so "Jiffy On Demand" matches before "Jiffy"
+    const sorted = [...state.companies].sort((a, b) => b.name.length - a.name.length);
+    return sorted.find(c => {
+      const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      return words.some(w => t.includes(w));
+    }) || null;
   },
 
   _matchCompany(leadSource) {
