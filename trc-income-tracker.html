@@ -1232,7 +1232,7 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
         const url = URL.createObjectURL(file);
         const img = new Image();
         img.onload  = () => { try { URL.revokeObjectURL(url); } catch {} resolve(img); };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Не удалось открыть изображение')); };
+        img.onerror = () => { try { URL.revokeObjectURL(url); } catch {} reject(new Error('Не удалось открыть изображение')); };
         img.src = url;
       });
     }
@@ -1798,7 +1798,7 @@ const JobForm = {
     let thumb = '';
     if (files[0] && files[0].type?.startsWith('image/')) {
       const url = URL.createObjectURL(files[0]);
-      thumb = `<img src="${url}" style="width:100%;max-height:140px;object-fit:contain;border-radius:6px;margin-bottom:8px;background:#f0efec" onload="setTimeout(()=>{ try{URL.revokeObjectURL(this.src);}catch{} },5000)">`;
+      thumb = `<img src="${url}" style="width:100%;max-height:140px;object-fit:contain;border-radius:6px;margin-bottom:8px;background:#f0efec">`;
     }
 
     const el = $('form-notice');
@@ -1872,7 +1872,7 @@ const JobForm = {
 
   previewPending(kind, idx) {
     const file = state.pending[kind][idx];
-    if (file) window.open(URL.createObjectURL(file), '_blank');
+    if (file) { try { window.open(URL.createObjectURL(file), '_blank'); } catch(e) { alert('Предпросмотр недоступен: ' + e.message); } }
   },
 
   removePending(kind, idx) {
