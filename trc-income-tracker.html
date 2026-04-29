@@ -726,7 +726,7 @@ hr { border: none; border-top: 1px solid var(--border); }
   <div class="content">
     <div id="summary-card" class="summary-card"></div>
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px">
-      <span style="font-size:11px;color:var(--muted)">Вид:</span>
+      <span style="font-size:11px;color:var(--muted)" data-i18n="viewLabel">Вид:</span>
       <div class="view-toggle">
         <button id="view-grid" data-i18n="viewGrid" onclick="List.setView('grid')">Сетка</button>
         <button id="view-month" data-i18n="viewMonth" onclick="List.setView('month')">По месяцам</button>
@@ -754,7 +754,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <input type="file" id="hcp-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'hcp')" style="display:none">
           <span style="font-size:18px">📸</span>
           <div style="min-width:0">
-            <div class="upload-text" id="hcp-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">HCP скриншот</div>
+            <div class="upload-text" id="hcp-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${T('hcpLabel')}</div>
             <div style="font-size:10px;color:var(--muted)">или <kbd style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:10px">⌘V</kbd></div>
           </div>
         </label>
@@ -762,7 +762,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <input type="file" id="inv-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'invoice')" style="display:none">
           <span style="font-size:18px">📄</span>
           <div style="min-width:0">
-            <div class="upload-text yellow" id="inv-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Инвойс з/ч</div>
+            <div class="upload-text yellow" id="inv-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${T('invoiceLabel')}</div>
             <div style="font-size:10px;color:var(--muted)">Parts Purchase Price</div>
           </div>
         </label>
@@ -1026,14 +1026,14 @@ var TRANSLATIONS = {
     signOut:         'Выйти',
 
     // Summary
-    myPayout:        'Моя выплата',
-    subtotal:        'Subtotal',
-    commissions:     '− Комиссии',
-    partsBuy:        '− Закупка з/ч',
-    netPool:         '= Net Profit Pool',
+    myPayout:        T('myPayout'),
+    subtotal:        T('subtotal'),
+    commissions:     T('commissions'),
+    partsBuy:        T('partsBuy'),
+    netPool:         T('netPool'),
     myShare:         '× {pct}% = Мне',
-    paid:            'Выплачено',
-    balance:         'Остаток',
+    paid:            T('paid'),
+    balance:         T('balance'),
     jobs:            '{n} джоб',
     jobs2:           '{n} джоба',
     jobs5:           '{n} джобов',
@@ -1041,8 +1041,8 @@ var TRANSLATIONS = {
     // List
     viewGrid:        'Сетка',
     viewMonth:       'По месяцам',
-    noJobs:          'Нет джобов. Нажми + чтобы добавить.',
-    noCompany:       'нет компании',
+    noJobs:          T('noJobs'),
+    noCompany:       T('noCompany'),
 
     // Form
     newJob:          'Новый джоб',
@@ -1083,7 +1083,7 @@ var TRANSLATIONS = {
 
     // Calc
     calcTitle:       'Расчёт выплаты',
-    totalMe:         'ИТОГО МНЕ',
+    totalMe:         T('totalMe'),
     leadComm:        '− Lead Commission ({pct})',
     myShareCalc:     '× {pct}% (моя доля)',
 
@@ -1114,13 +1114,13 @@ var TRANSLATIONS = {
 
     // History
     historyTitle:    'История изменений',
-    historyEmpty:    'История изменений пуста',
-    created:         'Запись создана',
-    noChanges:       'Нет изменений',
+    historyEmpty:    T('historyEmpty'),
+    created:         T('created'),
+    noChanges:       T('noChanges'),
 
     // Misc
-    deleteJob:       'Удалить этот джоб?',
-    deleteFile:      'Удалить файл?',
+    deleteJob:       T('deleteJob'),
+    deleteFile:      T('deleteFile'),
     deleteError:     'Ошибка удаления: ',
     previewError:    'Предпросмотр недоступен: ',
     recognizing:     ' Распознаю…',
@@ -1132,6 +1132,10 @@ var TRANSLATIONS = {
     files2:          '{n} файла загружено',
     files5:          '{n} файлов загружено',
     notSaved:        ' · не сохр.',
+    noName:          'Без имени',
+    viewLabel:       'Вид:',
+    meLabel:         'Мне:',
+    balanceLabel:    'Остаток:',
   },
   en: {
     // App
@@ -1271,6 +1275,10 @@ var TRANSLATIONS = {
     files2:          '{n} files uploaded',
     files5:          '{n} files uploaded',
     notSaved:        ' · unsaved',
+    noName:          'No name',
+    viewLabel:       'View:',
+    meLabel:         'Me:',
+    balanceLabel:    'Balance:',
   },
 };
 
@@ -1354,7 +1362,10 @@ const EMPLOYER_STATUS_LABELS = {
   done:        'Обработано',
 };
 
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTH_NAMES = {
+  ru: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
+  en: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+};
 
 /* ════════════════════════════════════════════════════════════
  * STATE
@@ -1419,9 +1430,10 @@ function pluralizeJobs(n) {
 
 /** Format YYYY-MM key as "Месяц YYYY" */
 function fmtMonthKey(key) {
-  if (key === '0000-00') return 'Без даты';
+  if (key === '0000-00') return _lang === 'en' ? 'No date' : 'Без даты';
   const [y, m] = key.split('-');
-  return `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
+  const names = MONTH_NAMES[_lang] || MONTH_NAMES.ru;
+  return `${names[parseInt(m, 10) - 1]} ${y}`;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1956,7 +1968,7 @@ const List = {
     const partialNote = ps === PAYMENT_STATUS.PARTIAL ? ` ${fmtMoney(job.paid_amount)}` : '';
     return `<div class="mini-card" onclick="JobForm.open(state.jobMap['${job.id}'])">
       <div class="mini-card-top">
-        <div class="mini-card-name">${escapeHtml(job.client_name) || 'Без имени'}</div>
+        <div class="mini-card-name">${escapeHtml(job.client_name) || T('noName') || 'Без имени'}</div>
         <div class="mini-card-amt ${p.payout < 0 ? 'red' : ''}">${fmtMoney(p.payout)}</div>
       </div>
       <div class="mini-card-meta">${escapeHtml(job.job_date) || '—'}${job.job_id ? ` · #${escapeHtml(job.job_id)}` : ''}</div>
@@ -1996,8 +2008,8 @@ const List = {
             <span class="month-count">${jobs.length} ${pluralizeJobs(jobs.length)}</span>
           </div>
           <div class="month-stats">
-            <span class="month-stat">Мне: <strong>${fmtMoney(totals.payout)}</strong></span>
-            <span class="month-stat ${due > 0 ? 'due' : 'clear'}">Остаток: <strong>${fmtMoney(due)}</strong></span>
+            <span class="month-stat">${T('paid')}: <strong>${fmtMoney(totals.payout)}</strong></span>
+            <span class="month-stat ${due > 0 ? 'due' : 'clear'}">${T('balance')}: <strong>${fmtMoney(due)}</strong></span>
             <span class="chevron ${expanded ? 'open' : ''}" style="font-size:12px;color:var(--muted)">▾</span>
           </div>
         </div>
@@ -2042,8 +2054,8 @@ const JobForm = {
     state.savedAttachments = [];
 
     $('form-title').textContent = job ? T('editJob') : T('newJob');
-    $('hcp-text').textContent   = 'Фото / скриншот карточки HCP';
-    $('inv-text').textContent   = 'Загрузить инвойс';
+    $('hcp-text').textContent   = T('hcpLabel');
+    $('inv-text').textContent   = T('invoiceLabel');
     UI.hideNotice();
     this._renderAttachments();
 
@@ -2223,7 +2235,7 @@ const JobForm = {
       state.pending[mode].push(...files);
       this._renderAttachments();
       UI.showNotice('error', err.message || String(err));
-      $(textId).textContent = mode === 'hcp' ? 'Фото / скриншот карточки HCP' : 'Загрузить инвойс';
+      $(textId).textContent = mode === 'hcp' ? T('hcpLabel') : T('invoiceLabel');
     }
   },
 
