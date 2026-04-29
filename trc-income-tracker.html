@@ -879,7 +879,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div class="calc-body collapsible-body open" id="calc-body">
         <div id="calc-rows"></div>
         <div class="calc-total">
-          <div class="calc-total-label">ИТОГО МНЕ</div>
+          <div class="calc-total-label">${T('totalMe')}</div>
           <div class="calc-total-val green" id="calc-total">—</div>
         </div>
       </div>
@@ -1026,14 +1026,14 @@ var TRANSLATIONS = {
     signOut:         'Выйти',
 
     // Summary
-    myPayout:        T('myPayout'),
-    subtotal:        T('subtotal'),
-    commissions:     T('commissions'),
-    partsBuy:        T('partsBuy'),
+    myPayout:        'Моя выплата',
+    subtotal:        'Subtotal',
+    commissions:     '− Комиссии',
+    partsBuy:        '− Закупка з/ч',
     netPool:         T('netPool'),
     myShare:         '× {pct}% = Мне',
-    paid:            T('paid'),
-    balance:         T('balance'),
+    paid:            'Выплачено',
+    balance:         'Остаток',
     jobs:            '{n} джоб',
     jobs2:           '{n} джоба',
     jobs5:           '{n} джобов',
@@ -1041,8 +1041,8 @@ var TRANSLATIONS = {
     // List
     viewGrid:        'Сетка',
     viewMonth:       'По месяцам',
-    noJobs:          T('noJobs'),
-    noCompany:       T('noCompany'),
+    noJobs:          'Нет джобов. Нажми + чтобы добавить.',
+    noCompany:       'нет компании',
 
     // Form
     newJob:          'Новый джоб',
@@ -1083,7 +1083,7 @@ var TRANSLATIONS = {
 
     // Calc
     calcTitle:       'Расчёт выплаты',
-    totalMe:         T('totalMe'),
+    totalMe:         'ИТОГО МНЕ',
     leadComm:        '− Lead Commission ({pct})',
     myShareCalc:     '× {pct}% (моя доля)',
 
@@ -1119,8 +1119,8 @@ var TRANSLATIONS = {
     noChanges:       T('noChanges'),
 
     // Misc
-    deleteJob:       T('deleteJob'),
-    deleteFile:      T('deleteFile'),
+    deleteJob:       'Удалить этот джоб?',
+    deleteFile:      'Удалить файл?',
     deleteError:     'Ошибка удаления: ',
     previewError:    'Предпросмотр недоступен: ',
     recognizing:     ' Распознаю…',
@@ -1891,7 +1891,7 @@ const List = {
     if (!state.jobs.length) {
       $('jobs-list').innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--muted)">
         <div style="font-size:40px;margin-bottom:12px;opacity:.3">📋</div>
-        <div style="font-size:14px">Нет джобов. Нажми + чтобы добавить.</div>
+        <div style="font-size:14px">${T('noJobs')}</div>
       </div>`;
       return;
     }
@@ -1937,19 +1937,19 @@ const List = {
     const dueColor  = remaining > 0 ? '#f87171' : '#4ade80';
 
     $('summary-card').innerHTML = `
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:4px">Моя выплата</div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:4px">${T('myPayout')}</div>
       <div class="summary-amount ${totals.payout >= 0 ? 'green' : ''}">${fmtMoney(totals.payout)}</div>
       <div class="summary-rows">
-        <div class="summary-row"><span class="lbl">Subtotal</span><span class="val">${fmtMoney(totals.subtotal)}</span></div>
-        <div class="summary-row neg"><span class="lbl">− Комиссии</span><span class="val">${fmtMoney(totals.commission)}</span></div>
-        <div class="summary-row neg"><span class="lbl">− Закупка з/ч</span><span class="val">${fmtMoney(totals.partsBuy)}</span></div>
-        <div class="summary-row bold"><span class="lbl">= Net Profit Pool</span><span class="val">${fmtMoney(totals.pool)}</span></div>
-        <div class="summary-row accent"><span class="lbl">× ${techPct}% = Мне</span><span class="val">${fmtMoney(totals.payout)}</span></div>
+        <div class="summary-row"><span class="lbl">${T('subtotal')}</span><span class="val">${fmtMoney(totals.subtotal)}</span></div>
+        <div class="summary-row neg"><span class="lbl">${T('commissions')}</span><span class="val">${fmtMoney(totals.commission)}</span></div>
+        <div class="summary-row neg"><span class="lbl">${T('partsBuy')}</span><span class="val">${fmtMoney(totals.partsBuy)}</span></div>
+        <div class="summary-row bold"><span class="lbl">${T('netPool')}</span><span class="val">${fmtMoney(totals.pool)}</span></div>
+        <div class="summary-row accent"><span class="lbl">${T('myShare', {pct: techPct})}</span><span class="val">${fmtMoney(totals.payout)}</span></div>
         <div class="summary-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)">
-          <span class="lbl">Выплачено</span><span class="val">${fmtMoney(totals.paid)}</span>
+          <span class="lbl">${T('paid')}</span><span class="val">${fmtMoney(totals.paid)}</span>
         </div>
         <div class="summary-row bold">
-          <span class="lbl" style="color:${dueColor}">Остаток</span>
+          <span class="lbl" style="color:${dueColor}">${T('balance')}</span>
           <span class="val" style="color:${dueColor}">${fmtMoney(remaining)}</span>
         </div>
       </div>
@@ -1968,7 +1968,7 @@ const List = {
     const partialNote = ps === PAYMENT_STATUS.PARTIAL ? ` ${fmtMoney(job.paid_amount)}` : '';
     return `<div class="mini-card" onclick="JobForm.open(state.jobMap['${job.id}'])">
       <div class="mini-card-top">
-        <div class="mini-card-name">${escapeHtml(job.client_name) || T('noName') || 'Без имени'}</div>
+        <div class="mini-card-name">${escapeHtml(job.client_name) || T('noName')}</div>
         <div class="mini-card-amt ${p.payout < 0 ? 'red' : ''}">${fmtMoney(p.payout)}</div>
       </div>
       <div class="mini-card-meta">${escapeHtml(job.job_date) || '—'}${job.job_id ? ` · #${escapeHtml(job.job_id)}` : ''}</div>
