@@ -1240,15 +1240,16 @@ const Api = {
  * ════════════════════════════════════════════════════════════ */
 const Gemini = {
   PROMPTS: {
-    hcp: `You are a strict data extraction tool. Extract ONLY values that are EXPLICITLY and CLEARLY visible in this HouseCall Pro screenshot. Never guess, generate, paraphrase or infer.
+    hcp: `You are a strict data extraction tool for HouseCall Pro job screenshots.
 
-Rules:
-- jobId: The COMPLETE HCP job number after "Job #" (8-9 digits like 97230403). Never use partial numbers.
-- servicesDescription: Copy EXACT text only if clearly readable. If not clearly visible, return null.
+CRITICAL RULE for clientName: Extract the customer name ONLY from the job title header that says "Job for [Name]" or "Job for [Name]'s [Appliance]". This is the CUSTOMER name. DO NOT use any technician name, employee name, profile name, or account owner name that may appear elsewhere on the screen (e.g. in a profile avatar, assignee field, or technician section). If you cannot find a clear "Job for [Name]" pattern, return null for clientName.
+
+Other rules:
+- jobId: The COMPLETE HCP job number after "Job #" (8-9 digits). Never use partial numbers.
+- servicesDescription: Copy EXACT text only if clearly readable, otherwise null.
 - servicesPrice: Sum of labor/service line items. Number only, no $.
 - partsClientPrice: Sum of parts/materials charged to client. Number only, no $.
-- paymentStatus: "paid" if "Paid in full" visible, "partial" if partial payment shown, "unpaid" if balance due or nothing shown.
-- leadSource: Company name shown as lead source or job source if visible.
+- leadSource: Company name shown as lead source if visible.
 
 Return ONLY valid JSON, no other text:
 {"clientName":string|null,"jobDate":"YYYY-MM-DD"|null,"jobId":string|null,"servicesDescription":string|null,"servicesPrice":number|null,"partsClientPrice":number|null,"leadSource":string|null}`,
