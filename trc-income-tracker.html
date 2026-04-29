@@ -991,46 +991,6 @@ window.onunhandledrejection = function(e) {
 };
 
 /* ════════════════════════════════════════════════════════════
- * CONFIGURATION
- * ════════════════════════════════════════════════════════════ */
-const CONFIG = {
-  SUPABASE_URL: 'https://kyiixiwlsffpjzrojoaq.supabase.co',
-  SUPABASE_KEY: 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6',
-  GEMINI_MODEL: 'gemini-2.5-flash',
-  REDIRECT_URL: 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html',
-  IMAGE_MAX_DIM: 600,
-  IMAGE_QUALITY: 0.6,
-  PROFILE_LOAD_RETRIES: 5,
-  PROFILE_LOAD_DELAY_MS: 1500,
-  DEFAULT_TECH_PCT: 0.40,
-};
-
-const ROLES = {
-  ADMIN: 'admin', TECH: 'tech', EMPLOYER: 'employer',
-  PENDING: 'pending', SUSPENDED: 'suspended',
-};
-
-const PAYMENT_STATUS = { UNPAID: 'unpaid', PARTIAL: 'partial', PAID: 'paid', CLARIFY: 'clarify' };
-
-const PAYMENT_LABELS = {
-  [PAYMENT_STATUS.UNPAID]:   'Не оплачено',
-  [PAYMENT_STATUS.PARTIAL]:  'Частично',
-  [PAYMENT_STATUS.PAID]:     'Оплачено',
-  [PAYMENT_STATUS.CLARIFY]:  'Требует уточнения',
-};
-
-const VIEW_MODE = { GRID: 'grid', MONTH: 'month' };
-
-const EMPLOYER_STATUS = { PENDING: 'pending', IN_PROGRESS: 'in_progress', DONE: 'done' };
-const EMPLOYER_STATUS_LABELS = {
-  pending:     'Не начато',
-  in_progress: 'В процессе',
-  done:        'Обработано',
-};
-
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-/* ════════════════════════════════════════════════════════════
  * LOCALIZATION
  * ════════════════════════════════════════════════════════════ */
 const TRANSLATIONS = {
@@ -1354,6 +1314,47 @@ function applyI18n() {
 }
 
 
+
+
+/* ════════════════════════════════════════════════════════════
+ * CONFIGURATION
+ * ════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  SUPABASE_URL: 'https://kyiixiwlsffpjzrojoaq.supabase.co',
+  SUPABASE_KEY: 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6',
+  GEMINI_MODEL: 'gemini-2.5-flash',
+  REDIRECT_URL: 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html',
+  IMAGE_MAX_DIM: 600,
+  IMAGE_QUALITY: 0.6,
+  PROFILE_LOAD_RETRIES: 5,
+  PROFILE_LOAD_DELAY_MS: 1500,
+  DEFAULT_TECH_PCT: 0.40,
+};
+
+const ROLES = {
+  ADMIN: 'admin', TECH: 'tech', EMPLOYER: 'employer',
+  PENDING: 'pending', SUSPENDED: 'suspended',
+};
+
+const PAYMENT_STATUS = { UNPAID: 'unpaid', PARTIAL: 'partial', PAID: 'paid', CLARIFY: 'clarify' };
+
+const PAYMENT_LABELS = {
+  [PAYMENT_STATUS.UNPAID]:   'Не оплачено',
+  [PAYMENT_STATUS.PARTIAL]:  'Частично',
+  [PAYMENT_STATUS.PAID]:     'Оплачено',
+  [PAYMENT_STATUS.CLARIFY]:  'Требует уточнения',
+};
+
+const VIEW_MODE = { GRID: 'grid', MONTH: 'month' };
+
+const EMPLOYER_STATUS = { PENDING: 'pending', IN_PROGRESS: 'in_progress', DONE: 'done' };
+const EMPLOYER_STATUS_LABELS = {
+  pending:     'Не начато',
+  in_progress: 'В процессе',
+  done:        'Обработано',
+};
+
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 /* ════════════════════════════════════════════════════════════
  * STATE
