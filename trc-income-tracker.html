@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRC Income Tracker</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <style>
 /* ════════════════════════════════════════════════════════════
    DESIGN TOKENS
@@ -670,6 +670,19 @@ hr { border: none; border-top: 1px solid var(--border); }
 
 <script>
 
+// ── Global error handler ─────────────────────────────────────
+// Shows a visible error instead of a white screen
+window.onerror = function(msg, src, line, col, err) {
+  document.body.innerHTML = `<div style="padding:32px;font-family:sans-serif;max-width:600px;margin:0 auto">
+    <div style="font-size:32px;margin-bottom:16px">⚠️</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">Ошибка загрузки</div>
+    <pre style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:11px;overflow:auto;white-space:pre-wrap;word-break:break-all">${msg}\n${src} ${line}:${col}\n${(err&&err.stack)||''}</pre>
+    <button onclick="location.reload()" style="margin-top:16px;padding:12px 24px;background:#1a1814;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer">🔄 Перезагрузить</button>
+  </div>`;
+};
+window.onunhandledrejection = function(e) {
+  console.error('Unhandled rejection:', e.reason);
+};
 
 /* ════════════════════════════════════════════════════════════
  * CONFIGURATION
@@ -1430,7 +1443,12 @@ const JobForm = {
       return;
     }
 
-    UI.setButton('save-btn', '<span class="spinner"></span> Сохраняю…', true);
+    const btn = $('save-btn');
+    const originalText = btn?.textContent || 'Сохранить';
+    if (btn) { btn.innerHTML = '<span class="spinner"></span> Сохраняю…'; btn.disabled = true; }
+
+    const resetBtn = () => { if (btn) { btn.textContent = originalText; btn.disabled = false; } };
+
     try {
       let jobId;
       if (state.editingJobId) {
@@ -1439,23 +1457,27 @@ const JobForm = {
       } else {
         const created = await Api.createJob(row);
         jobId = created.id;
-        await Api.logJobCreated(jobId).catch(() => {/* non-critical */});
+        await Api.logJobCreated(jobId).catch(() => {});
       }
 
-      // Upload pending attachments in parallel
+      // Upload attachments (non-blocking — errors don't abort save)
       const uploads = [
-        ...state.pending.hcp.map(file     => Api.uploadAttachment(file, jobId, 'hcp',     state.user.id)),
-        ...state.pending.invoice.map(file => Api.uploadAttachment(file, jobId, 'invoice', state.user.id)),
+        ...state.pending.hcp.map(f     => Api.uploadAttachment(f, jobId, 'hcp',     state.user.id)),
+        ...state.pending.invoice.map(f => Api.uploadAttachment(f, jobId, 'invoice', state.user.id)),
       ];
-      await Promise.all(uploads.map(p => p.catch(err => console.warn('Upload failed:', err))));
+      await Promise.all(uploads.map(p => p.catch(err => console.warn('Upload:', err))));
 
       await App.loadUserData();
+      resetBtn();
+      UI.showToast('✅ Джоб сохранён');
       UI.showScreen('list');
       List.render();
     } catch (err) {
-      UI.showNotice('error', err.message || String(err));
-    } finally {
-      UI.setButton('save-btn', 'Сохранить', false);
+      resetBtn();
+      const msg = err.message || String(err);
+      UI.showNotice('error', msg);
+      // Also alert so it's impossible to miss
+      alert('Ошибка сохранения:\n' + msg);
     }
   },
 
