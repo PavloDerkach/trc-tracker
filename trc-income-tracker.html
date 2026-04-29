@@ -1719,7 +1719,7 @@ const JobForm = {
     ['f-jobId','f-client','f-services-desc','f-services-price','f-parts-client',
      'f-parts-buy','f-notes','f-paid-amount','f-payment-notes'].forEach(id => set(id, ''));
     set('f-date',           today());
-    set('f-company',        state.companies[0]?.id ?? '');
+    set('f-company',        '');
     set('f-payment-status', PAYMENT_STATUS.UNPAID);
   },
 
@@ -1843,11 +1843,17 @@ const JobForm = {
   },
 
   _matchCompany(leadSource) {
-    const ls = leadSource.toLowerCase();
+    if (!leadSource) return null;
+    const ls = leadSource.toLowerCase().trim();
+
     return state.companies.find(c => {
       const cn = c.name.toLowerCase();
-      return cn.includes(ls) || ls.includes(cn.split(' ')[0]);
-    });
+      // Full string contains check
+      if (cn.includes(ls) || ls.includes(cn)) return true;
+      // Word-by-word: any significant word from leadSource matches company name
+      const lsWords = ls.split(/\s+/).filter(w => w.length > 2);
+      return lsWords.some(w => cn.includes(w));
+    }) || null;
   },
 
   _buildSuccessMessage(data) {
