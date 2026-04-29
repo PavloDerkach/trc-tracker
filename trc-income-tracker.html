@@ -1255,7 +1255,7 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts }],
-        generationConfig: { temperature: 0, maxOutputTokens: 1000 },
+        generationConfig: { temperature: 0, maxOutputTokens: 2048 },
       }),
     });
     const raw = await response.text();
