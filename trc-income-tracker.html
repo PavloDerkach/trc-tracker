@@ -58,10 +58,11 @@
         'Content-Type': 'application/json',
         ...(opts.headers || {}),
       };
+      const hasBody = method !== 'GET' && method !== 'HEAD' && method !== 'DELETE';
       const res = await fetch(url, {
         method,
         headers,
-        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        body: hasBody && opts.body ? JSON.stringify(opts.body) : undefined,
         signal: opts.signal,
       });
       if (opts.raw) return res;
@@ -1230,7 +1231,7 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
       return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
-        img.onload  = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onload  = () => { try { URL.revokeObjectURL(url); } catch {} resolve(img); };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Не удалось открыть изображение')); };
         img.src = url;
       });
@@ -1797,7 +1798,7 @@ const JobForm = {
     let thumb = '';
     if (files[0] && files[0].type?.startsWith('image/')) {
       const url = URL.createObjectURL(files[0]);
-      thumb = `<img src="${url}" style="width:100%;max-height:140px;object-fit:contain;border-radius:6px;margin-bottom:8px;background:#f0efec" onload="setTimeout(()=>URL.revokeObjectURL(this.src),5000)">`;
+      thumb = `<img src="${url}" style="width:100%;max-height:140px;object-fit:contain;border-radius:6px;margin-bottom:8px;background:#f0efec" onload="setTimeout(()=>{ try{URL.revokeObjectURL(this.src);}catch{} },5000)">`;
     }
 
     const el = $('form-notice');
