@@ -754,7 +754,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <input type="file" id="hcp-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'hcp')" style="display:none">
           <span style="font-size:18px">📸</span>
           <div style="min-width:0">
-            <div class="upload-text" id="hcp-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${T('hcpLabel')}</div>
+            <div class="upload-text" id="hcp-text" data-i18n="hcpLabel" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">HCP скриншот</div>
             <div style="font-size:10px;color:var(--muted)">или <kbd style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:10px">⌘V</kbd></div>
           </div>
         </label>
@@ -762,7 +762,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <input type="file" id="inv-input" accept="image/*,.heic,.heif,.pdf" multiple onchange="JobForm.handleInput(this,'invoice')" style="display:none">
           <span style="font-size:18px">📄</span>
           <div style="min-width:0">
-            <div class="upload-text yellow" id="inv-text" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${T('invoiceLabel')}</div>
+            <div class="upload-text yellow" id="inv-text" data-i18n="invoiceLabel" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Инвойс з/ч</div>
             <div style="font-size:10px;color:var(--muted)">Parts Purchase Price</div>
           </div>
         </label>
@@ -782,16 +782,16 @@ hr { border: none; border-top: 1px solid var(--border); }
             <input id="f-jobId" type="text" class="field-input" placeholder="#97230395" autocorrect="off">
           </div>
           <div>
-            <label class="field-label">Дата</label>
+            <label class="field-label" data-i18n="date">Дата</label>
             <input id="f-date" type="date" class="field-input">
           </div>
         </div>
         <div>
-          <label class="field-label">Customer Name</label>
+          <label class="field-label" data-i18n="customerName">Customer Name</label>
           <input id="f-client" type="text" class="field-input" placeholder="Имя клиента">
         </div>
         <div>
-          <label class="field-label">Lead Source</label>
+          <label class="field-label" data-i18n="leadSource">Lead Source</label>
           <select id="f-company" class="field-input field-select" onchange="JobForm.updateCalc()"></select>
         </div>
         <div>
@@ -813,7 +813,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <input id="f-parts-buy" type="number" step="0.01" class="field-input yellow-input" placeholder="0.00" oninput="JobForm.updateCalc()">
         </div>
         <div>
-          <label class="field-label">Notes</label>
+          <label class="field-label" data-i18n="notes">Notes</label>
           <textarea id="f-notes" class="field-input field-textarea" placeholder="—"></textarea>
         </div>
       </div>
@@ -823,14 +823,14 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div class="payment-section">
       <div class="payment-header" onclick="UI.toggleSection('payment-body','payment-chevron')">
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">4. Статус оплаты</span>
+          <span data-i18n="paymentStatus" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">4. Статус оплаты</span>
           <span id="payment-badge-header" class="payment-badge unpaid">Не оплачено</span>
         </div>
         <span class="chevron open" id="payment-chevron">▾</span>
       </div>
       <div class="payment-body collapsible-body open" id="payment-body">
         <div>
-          <label class="field-label">Статус</label>
+          <label class="field-label" data-i18n="status">Статус</label>
           <select id="f-payment-status" class="field-input field-select" onchange="JobForm.updatePaymentBadge()">
             <option value="unpaid">Не оплачено</option>
             <option value="partial">Частично оплачено</option>
@@ -853,14 +853,14 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div class="payment-section">
       <div class="payment-header" onclick="UI.toggleSection('employer-body','employer-chevron')">
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">5. Статус обработки работодателем</span>
+          <span data-i18n="employerStatus" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">5. Статус обработки работодателем</span>
           <span id="employer-badge-header" class="employer-badge pending">Не начато</span>
         </div>
         <span class="chevron open" id="employer-chevron">▾</span>
       </div>
       <div class="payment-body collapsible-body open" id="employer-body">
         <div>
-          <label class="field-label">Статус</label>
+          <label class="field-label" data-i18n="status">Статус</label>
           <select id="f-employer-status" class="field-input field-select" onchange="JobForm.updateEmployerBadge()">
             <option value="pending">Не начато</option>
             <option value="in_progress">В процессе</option>
@@ -873,13 +873,13 @@ hr { border: none; border-top: 1px solid var(--border); }
     <!-- Calc -->
     <div class="calc-card">
       <div class="calc-header" onclick="UI.toggleSection('calc-body','calc-chevron')">
-        <div class="calc-header-label">Расчёт выплаты</div>
+        <div class="calc-header-label" data-i18n="calcTitle">Расчёт выплаты</div>
         <div class="chevron open" id="calc-chevron">▾</div>
       </div>
       <div class="calc-body collapsible-body open" id="calc-body">
         <div id="calc-rows"></div>
         <div class="calc-total">
-          <div class="calc-total-label">${T('totalMe')}</div>
+          <div class="calc-total-label" data-i18n="totalMe">ИТОГО МНЕ</div>
           <div class="calc-total-val green" id="calc-total">—</div>
         </div>
       </div>
@@ -910,7 +910,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       Твоя доля: <strong id="settings-pct-label">40%</strong> от Net Profit Pool.
     </div>
     <div class="card">
-      <div class="card-label">Моя доля</div>
+      <div class="card-label" data-i18n="mySharePct">Моя доля</div>
       <div style="display:flex;align-items:center;gap:12px">
         <input id="s-tech-pct" type="number" min="1" max="100" step="1" class="field-input" style="width:80px" value="40">
         <span style="font-size:14px;color:var(--muted)">%</span>
@@ -1030,7 +1030,7 @@ var TRANSLATIONS = {
     subtotal:        'Subtotal',
     commissions:     '− Комиссии',
     partsBuy:        '− Закупка з/ч',
-    netPool:         T('netPool'),
+    netPool:         '= Net Profit Pool',
     myShare:         '× {pct}% = Мне',
     paid:            'Выплачено',
     balance:         'Остаток',
@@ -1114,9 +1114,9 @@ var TRANSLATIONS = {
 
     // History
     historyTitle:    'История изменений',
-    historyEmpty:    T('historyEmpty'),
-    created:         T('created'),
-    noChanges:       T('noChanges'),
+    historyEmpty:    'История изменений пуста',
+    created:         'Запись создана',
+    noChanges:       'Нет изменений',
 
     // Misc
     deleteJob:       'Удалить этот джоб?',
