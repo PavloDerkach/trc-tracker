@@ -661,6 +661,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div class="auth-logo">🔧</div>
     <div class="auth-title">TRC Income Tracker</div>
     <div class="auth-sub" id="auth-sub">Войди в свой аккаунт</div>
+    <!-- i18n applied via applyI18n() -->
     <div class="auth-form">
       <div>
         <label class="field-label">Email</label>
@@ -692,16 +693,16 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div id="screen-pending" class="screen">
   <div class="center-screen">
     <div style="font-size:52px;margin-bottom:16px">⏳</div>
-    <div class="auth-title">Ожидание одобрения</div>
-    <div class="auth-sub">Твоя учётная запись ожидает одобрения администратора.</div>
+    <div class="auth-title" data-i18n="pendingTitle">Ожидание одобрения</div>
+    <div class="auth-sub" data-i18n="pendingSub">Твоя учётная запись ожидает одобрения администратора.</div>
     <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()">Выйти</button>
   </div>
 </div>
 <div id="screen-suspended" class="screen">
   <div class="center-screen">
     <div style="font-size:52px;margin-bottom:16px">🚫</div>
-    <div class="auth-title">Доступ заблокирован</div>
-    <div class="auth-sub">Свяжись с администратором.</div>
+    <div class="auth-title" data-i18n="suspendedTitle">Доступ заблокирован</div>
+    <div class="auth-sub" data-i18n="suspendedSub">Свяжись с администратором.</div>
     <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()">Выйти</button>
   </div>
 </div>
@@ -712,10 +713,11 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div id="screen-list" class="screen">
   <div class="header">
     <div>
-      <div class="header-sub">TRC — Мои доходы</div>
-      <div class="header-title">Журнал джобов</div>
+      <div class="header-sub" data-i18n="appSubtitle">TRC — Мои доходы</div>
+      <div class="header-title" data-i18n="jobList">Журнал джобов</div>
     </div>
     <div style="display:flex;gap:4px">
+      <button id="lang-btn" class="btn btn-icon" onclick="setLang(_lang==='ru'?'en':'ru')" title="Language" style="font-size:11px;font-weight:700;padding:6px 8px;border-radius:8px">EN</button>
       <button id="admin-btn" class="btn btn-icon" onclick="App.showScreen('admin')" style="display:none" title="Админ">👑</button>
       <button class="btn btn-icon" onclick="App.showScreen('settings')" title="Настройки">⚙️</button>
       <button class="btn btn-icon" onclick="Auth.signOut()" title="Выйти">🚪</button>
@@ -726,8 +728,8 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px">
       <span style="font-size:11px;color:var(--muted)">Вид:</span>
       <div class="view-toggle">
-        <button id="view-grid"  onclick="List.setView('grid')">Сетка</button>
-        <button id="view-month" onclick="List.setView('month')">По месяцам</button>
+        <button id="view-grid" data-i18n="viewGrid" onclick="List.setView('grid')">Сетка</button>
+        <button id="view-month" data-i18n="viewMonth" onclick="List.setView('month')">По месяцам</button>
       </div>
     </div>
     <div id="jobs-list"></div>
@@ -772,7 +774,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 
     <!-- Fields -->
     <div class="card">
-      <div class="card-label" style="margin-bottom:14px">3. Данные джоба</div>
+      <div class="card-label" data-i18n="jobData" style="margin-bottom:14px">3. Данные джоба</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="grid-2">
           <div>
@@ -886,8 +888,8 @@ hr { border: none; border-top: 1px solid var(--border); }
 
   <div class="bottom-bar">
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="App.showScreen('list')">Отмена</button>
-      <button id="save-btn" class="btn btn-primary" onclick="JobForm.save()">Сохранить</button>
+      <button class="btn btn-secondary" data-i18n="cancel" onclick="App.showScreen('list')">Отмена</button>
+      <button id="save-btn" data-i18n="save" class="btn btn-primary" onclick="JobForm.save()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -898,7 +900,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div id="screen-settings" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
-    <div class="header-title">Настройки</div>
+    <div class="header-title" data-i18n="settings">Настройки</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
@@ -927,7 +929,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <button class="btn btn-secondary btn-sm" onclick="Auth.signOut()" style="width:auto;align-self:flex-start">🚪 Выйти</button>
   </div>
   <div class="bottom-bar">
-    <button id="settings-save-btn" class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
+    <button id="settings-save-btn" data-i18n="save" class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
   </div>
 </div>
 
@@ -937,7 +939,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div id="screen-admin" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
-    <div class="header-title">👑 Администрирование</div>
+    <div class="header-title" data-i18n="admin">👑 Администрирование</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
@@ -946,9 +948,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       <strong>employer</strong> — работодатель, видит джобы своих техников и вносит оплаты.<br>
       <strong>admin</strong> — полный доступ.
     </div>
-    <button class="btn btn-primary" onclick="Admin.invite()" style="border-radius:var(--rs)">
-      ✉️ Пригласить пользователя
-    </button>
+    <button class="btn btn-primary" data-i18n="inviteUser" onclick="Admin.invite()" style="border-radius:var(--rs)">✉️ Пригласить пользователя</button>
     <div class="card">
       <div class="card-label" style="margin-bottom:14px">Пользователи</div>
       <div id="admin-users"></div>
@@ -962,7 +962,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div id="screen-history" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
-    <div class="header-title">История изменений</div>
+    <div class="header-title" data-i18n="historyTitle">История изменений</div>
     <div style="width:36px"></div>
   </div>
   <div class="content">
@@ -1031,6 +1031,331 @@ const EMPLOYER_STATUS_LABELS = {
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 /* ════════════════════════════════════════════════════════════
+ * LOCALIZATION
+ * ════════════════════════════════════════════════════════════ */
+const TRANSLATIONS = {
+  ru: {
+    // App
+    appTitle:        'TRC Income Tracker',
+    appSubtitle:     'TRC — Мои доходы',
+    jobList:         'Журнал джобов',
+
+    // Auth
+    signIn:          'Войти',
+    signUp:          'Зарегистрироваться',
+    email:           'Email',
+    password:        'Пароль',
+    name:            'Имя (необязательно)',
+    noAccount:       'Нет аккаунта?',
+    haveAccount:     'Уже есть аккаунт?',
+    signInLink:      'Войти',
+    signUpLink:      'Зарегистрироваться',
+    signUpSub:       'Создай аккаунт — администратор одобрит доступ',
+    signInSub:       'Войди в свой аккаунт',
+    checkEmail:      T('checkEmail'),
+    fillFields:      T('fillFields'),
+    wrongPassword:   'Неверный email или пароль',
+    alreadyReg:      'Email уже зарегистрирован. Войди.',
+    weakPassword:    'Пароль минимум 6 символов',
+
+    // Screens
+    pendingTitle:    'Ожидание одобрения',
+    pendingSub:      'Твоя учётная запись ожидает одобрения администратора.',
+    suspendedTitle:  'Доступ заблокирован',
+    suspendedSub:    'Свяжись с администратором.',
+    signOut:         'Выйти',
+
+    // Summary
+    myPayout:        T('myPayout'),
+    subtotal:        T('subtotal'),
+    commissions:     T('commissions'),
+    partsBuy:        T('partsBuy'),
+    netPool:         T('netPool'),
+    myShare:         '× {pct}% = Мне',
+    paid:            T('paid'),
+    balance:         T('balance'),
+    jobs:            '{n} джоб',
+    jobs2:           '{n} джоба',
+    jobs5:           '{n} джобов',
+
+    // List
+    viewGrid:        'Сетка',
+    viewMonth:       'По месяцам',
+    noJobs:          T('noJobs'),
+    noCompany:       T('noCompany'),
+
+    // Form
+    newJob:          'Новый джоб',
+    editJob:         'Редактировать',
+    hcpLabel:        'HCP скриншот',
+    hcpHint:         'или',
+    invoiceLabel:    'Инвойс з/ч',
+    invoiceHint:     'Parts Purchase Price',
+    jobData:         '3. Данные джоба',
+    jobId:           'Job ID',
+    date:            'Дата',
+    customerName:    'Customer Name',
+    customerPlaceholder: 'Имя клиента',
+    leadSource:      'Lead Source',
+    selectCompany:   '— выбрать —',
+    servicesDesc:    'Services (описание работ)',
+    servicesPrice:   'Services Price ($)',
+    partsClient:     'Parts Price for Client ($)',
+    partsPurchase:   'Parts Purchase Price ($)',
+    partsPurchaseSub:'— закупочная стоимость',
+    notes:           'Notes',
+    cancel:          'Отмена',
+    save:            'Сохранить',
+    saving:          'Сохраняю…',
+    saved:           '✅ Джоб сохранён',
+    selectSupplier:  'Выбери поставщика заказа',
+    saveError:       'Ошибка сохранения: ',
+
+    // Payment
+    paymentStatus:   '4. Статус оплаты',
+    status:          'Статус',
+    paidAmount:      'Сумма выплаты ($)',
+    paymentNote:     'Заметка к оплате',
+    paymentNotePlaceholder: 'e.g. E-transfer 14 Apr',
+
+    // Employer status
+    employerStatus:  '5. Статус обработки работодателем',
+
+    // Calc
+    calcTitle:       'Расчёт выплаты',
+    totalMe:         T('totalMe'),
+    leadComm:        '− Lead Commission ({pct})',
+    myShareCalc:     '× {pct}% (моя доля)',
+
+    // Settings
+    settings:        'Настройки',
+    mySharePct:      'Моя доля',
+    geminiKey:       'Gemini API Key',
+    geminiFree:      'Бесплатно:',
+    addSupplier:     T('addSupplier'),
+    settingsSaved:   '✅ Сохранено!',
+    settingsInfo:    '<strong>Commission %</strong> — доля поставщика от Subtotal (Services + Parts for Client).<br>Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>Твоя доля: <strong>{pct}%</strong> от Net Profit Pool.',
+
+    // Admin
+    admin:           '👑 Администрирование',
+    users:           'Пользователи',
+    inviteUser:      '✉️ Пригласить пользователя',
+    adminInfo:       '<strong>tech</strong> — техник, создаёт джобы.<br><strong>employer</strong> — работодатель, видит джобы своих техников и вносит оплаты.<br><strong>admin</strong> — полный доступ.',
+    noEmployer:      '— без работодателя —',
+    employer:        'Работодатель',
+    itsYou:          '(это ты)',
+    awaitingReg:     '⏳ ожидает регистрации',
+    inviteEmail:     'Email нового пользователя:',
+    inviteRole:      'Роль (введи одну из):\ntech\nemployer\nadmin',
+    inviteDefault:   'tech',
+    inviteInvalidRole:'Неверная роль. Допустимые: tech, employer, admin, pending',
+    inviteSuccess:   '✅ Пользователь {email}: роль "{role}" при регистрации. Ссылка: {link}',
+    inviteError:     'Ошибка: ',
+
+    // History
+    historyTitle:    'История изменений',
+    historyEmpty:    T('historyEmpty'),
+    created:         T('created'),
+    noChanges:       T('noChanges'),
+
+    // Misc
+    deleteJob:       'Удалить этот джоб?',
+    deleteFile:      'Удалить файл?',
+    deleteError:     'Ошибка удаления: ',
+    previewError:    'Предпросмотр недоступен: ',
+    recognizing:     ' Распознаю…',
+    recognized:      T('recognized'),
+    reviewHint:      T('reviewHint'),
+    sourceImage:     T('sourceImage'),
+    noApiKey:        'Нет Gemini API Key — добавь в Настройках.',
+    files1:          '{n} файл загружено',
+    files2:          '{n} файла загружено',
+    files5:          '{n} файлов загружено',
+    notSaved:        ' · не сохр.',
+  },
+  en: {
+    // App
+    appTitle:        'TRC Income Tracker',
+    appSubtitle:     'TRC — My Income',
+    jobList:         'Job Journal',
+
+    // Auth
+    signIn:          'Sign In',
+    signUp:          'Sign Up',
+    email:           'Email',
+    password:        'Password',
+    name:            'Name (optional)',
+    noAccount:       'No account?',
+    haveAccount:     'Already have an account?',
+    signInLink:      'Sign In',
+    signUpLink:      'Sign Up',
+    signUpSub:       'Create account — admin will approve access',
+    signInSub:       'Sign in to your account',
+    checkEmail:      '✅ Check your email to confirm registration.',
+    fillFields:      'Please fill in email and password',
+    wrongPassword:   'Invalid email or password',
+    alreadyReg:      'Email already registered. Sign in.',
+    weakPassword:    'Password must be at least 6 characters',
+
+    // Screens
+    pendingTitle:    'Awaiting Approval',
+    pendingSub:      'Your account is pending administrator approval.',
+    suspendedTitle:  'Access Blocked',
+    suspendedSub:    'Please contact the administrator.',
+    signOut:         'Sign Out',
+
+    // Summary
+    myPayout:        'My Payout',
+    subtotal:        'Subtotal',
+    commissions:     '− Commissions',
+    partsBuy:        '− Parts Purchase',
+    netPool:         T('netPool'),
+    myShare:         '× {pct}% = Me',
+    paid:            'Paid Out',
+    balance:         'Balance',
+    jobs:            '{n} job',
+    jobs2:           '{n} jobs',
+    jobs5:           '{n} jobs',
+
+    // List
+    viewGrid:        'Grid',
+    viewMonth:       'By Month',
+    noJobs:          'No jobs. Press + to add.',
+    noCompany:       'no company',
+
+    // Form
+    newJob:          'New Job',
+    editJob:         'Edit Job',
+    hcpLabel:        'HCP Screenshot',
+    hcpHint:         'or',
+    invoiceLabel:    'Parts Invoice',
+    invoiceHint:     'Parts Purchase Price',
+    jobData:         '3. Job Details',
+    jobId:           'Job ID',
+    date:            'Date',
+    customerName:    'Customer Name',
+    customerPlaceholder: 'Customer name',
+    leadSource:      'Lead Source',
+    selectCompany:   '— select —',
+    servicesDesc:    'Services (description)',
+    servicesPrice:   'Services Price ($)',
+    partsClient:     'Parts Price for Client ($)',
+    partsPurchase:   'Parts Purchase Price ($)',
+    partsPurchaseSub:'— purchase cost',
+    notes:           'Notes',
+    cancel:          'Cancel',
+    save:            'Save',
+    saving:          'Saving…',
+    saved:           '✅ Job saved',
+    selectSupplier:  'Please select a lead source',
+    saveError:       'Save error: ',
+
+    // Payment
+    paymentStatus:   '4. Payment Status',
+    status:          'Status',
+    paidAmount:      'Amount Paid ($)',
+    paymentNote:     'Payment Note',
+    paymentNotePlaceholder: 'e.g. E-transfer 14 Apr',
+
+    // Employer status
+    employerStatus:  '5. Employer Processing Status',
+
+    // Calc
+    calcTitle:       'Payout Breakdown',
+    totalMe:         'MY TOTAL',
+    leadComm:        '− Lead Commission ({pct})',
+    myShareCalc:     '× {pct}% (my share)',
+
+    // Settings
+    settings:        'Settings',
+    mySharePct:      'My Share',
+    geminiKey:       'Gemini API Key',
+    geminiFree:      'Free at:',
+    addSupplier:     '＋ Add Supplier',
+    settingsSaved:   '✅ Saved!',
+    settingsInfo:    '<strong>Commission %</strong> — supplier share of Subtotal (Services + Parts for Client).<br>Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>Your share: <strong>{pct}%</strong> of Net Profit Pool.',
+
+    // Admin
+    admin:           '👑 Administration',
+    users:           'Users',
+    inviteUser:      '✉️ Invite User',
+    adminInfo:       '<strong>tech</strong> — technician, creates jobs.<br><strong>employer</strong> — employer, views tech jobs and enters payments.<br><strong>admin</strong> — full access.',
+    noEmployer:      '— no employer —',
+    employer:        'Employer',
+    itsYou:          "(that's you)",
+    awaitingReg:     '⏳ awaiting registration',
+    inviteEmail:     'New user email:',
+    inviteRole:      'Role (enter one of):\ntech\nemployer\nadmin',
+    inviteDefault:   'tech',
+    inviteInvalidRole:'Invalid role. Allowed: tech, employer, admin, pending',
+    inviteSuccess:   '✅ User {email} will have role "{role}" upon registration. Link: {link}',
+    inviteError:     'Error: ',
+
+    // History
+    historyTitle:    'Change History',
+    historyEmpty:    'No change history',
+    created:         'Record created',
+    noChanges:       'No changes',
+
+    // Misc
+    deleteJob:       'Delete this job?',
+    deleteFile:      'Delete file?',
+    deleteError:     'Delete error: ',
+    previewError:    'Preview unavailable: ',
+    recognizing:     ' Recognizing…',
+    recognized:      '✅ Data extracted — please verify',
+    reviewHint:      'If data is incorrect — edit fields manually before saving.',
+    sourceImage:     'Source image',
+    noApiKey:        'No Gemini API Key — add it in Settings.',
+    files1:          '{n} file uploaded',
+    files2:          '{n} files uploaded',
+    files5:          '{n} files uploaded',
+    notSaved:        ' · unsaved',
+  },
+};
+
+let _lang = localStorage.getItem('trc_lang') || 'ru';
+
+function T(key, vars = {}) {
+  let str = (TRANSLATIONS[_lang] || TRANSLATIONS.ru)[key] || key;
+  for (const [k, v] of Object.entries(vars)) {
+    str = str.replace(new RegExp('{' + k + '}', 'g'), v);
+  }
+  return str;
+}
+
+function setLang(lang) {
+  _lang = lang;
+  localStorage.setItem('trc_lang', lang);
+  applyI18n();
+  // Re-render dynamic parts
+  if (state.user) {
+    const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '');
+    if (screen) App.showScreen(screen);
+  }
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const attr = el.getAttribute('data-i18n-attr');
+    const vars = {};
+    [...el.attributes].forEach(a => {
+      if (a.name.startsWith('data-i18n-var-')) {
+        vars[a.name.replace('data-i18n-var-', '')] = a.value;
+      }
+    });
+    if (attr) el.setAttribute(attr, T(key, vars));
+    else el.innerHTML = T(key, vars);
+  });
+  // Update lang toggle button
+  const btn = document.getElementById('lang-btn');
+  if (btn) btn.textContent = _lang === 'ru' ? 'EN' : 'RU';
+}
+
+
+
+/* ════════════════════════════════════════════════════════════
  * STATE
  * ════════════════════════════════════════════════════════════ */
 const state = {
@@ -1086,9 +1411,9 @@ function fmtPercent(ratio) {
 
 /** Russian pluralization for "джоб" */
 function pluralizeJobs(n) {
-  if (n === 1) return 'джоб';
-  if (n < 5)   return 'джоба';
-  return 'джобов';
+  if (n === 1) return T('jobs', {n}).replace('{n}', '').trim();
+  if (n < 5)   return T('jobs2', {n}).replace('{n}', '').trim();
+  return T('jobs5', {n}).replace('{n}', '').trim();
 }
 
 /** Format YYYY-MM key as "Месяц YYYY" */
@@ -1362,7 +1687,7 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
   },
 
   async _call(parts) {
-    if (!state.apiKey) throw new Error('Нет Gemini API Key — добавь в Настройках.');
+    if (!state.apiKey) throw new Error(T('noApiKey'));
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${state.apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
@@ -1529,9 +1854,9 @@ const Auth = {
   },
 
   _humanizeError(msg) {
-    if (msg.includes('Invalid login'))      return 'Неверный email или пароль';
-    if (msg.includes('already registered')) return 'Email уже зарегистрирован. Войди.';
-    if (msg.includes('Password should'))    return 'Пароль минимум 6 символов';
+    if (msg.includes('Invalid login'))      return T('wrongPassword');
+    if (msg.includes('already registered')) return T('alreadyReg');
+    if (msg.includes('Password should'))    return T('weakPassword');
     return msg;
   },
 
@@ -1715,7 +2040,7 @@ const JobForm = {
     state.pending = { hcp: [], invoice: [] };
     state.savedAttachments = [];
 
-    $('form-title').textContent = job ? 'Редактировать' : 'Новый джоб';
+    $('form-title').textContent = job ? T('editJob') : T('newJob');
     $('hcp-text').textContent   = 'Фото / скриншот карточки HCP';
     $('inv-text').textContent   = 'Загрузить инвойс';
     UI.hideNotice();
@@ -1732,7 +2057,7 @@ const JobForm = {
   },
 
   _populateCompanySelect() {
-    $('f-company').innerHTML = '<option value="">— выбрать —</option>' +
+    $('f-company').innerHTML = "<option value=\"\">" + T('selectCompany') + "</option>" +
       state.companies.map(c =>
         `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${fmtPercent(c.commission_pct)})</option>`
       ).join('');
@@ -1790,13 +2115,13 @@ const JobForm = {
   async save() {
     const row = this._collectInputs();
     if (!row.company_id) {
-      UI.showNotice('error', 'Выбери поставщика заказа');
+      UI.showNotice('error', T('selectSupplier'));
       return;
     }
 
     const btn = $('save-btn');
     const originalText = btn?.textContent || 'Сохранить';
-    if (btn) { btn.innerHTML = '<span class="spinner"></span> Сохраняю…'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<span class="spinner"></span> ' + T('saving'); btn.disabled = true; }
 
     const resetBtn = () => { if (btn) { btn.textContent = originalText; btn.disabled = false; } };
 
@@ -1820,7 +2145,7 @@ const JobForm = {
 
       await App.loadUserData();
       resetBtn();
-      UI.showToast('✅ Джоб сохранён');
+      UI.showToast(T('saved'));
       UI.showScreen('list');
       List.render();
     } catch (err) {
@@ -1828,7 +2153,7 @@ const JobForm = {
       const msg = err.message || String(err);
       UI.showNotice('error', msg);
       // Also alert so it's impossible to miss
-      alert('Ошибка сохранения:\n' + msg);
+      alert(T('saveError') + msg);
     }
   },
 
@@ -1877,7 +2202,7 @@ const JobForm = {
 
   async _processFiles(files, mode) {
     const textId = mode === 'hcp' ? 'hcp-text' : 'inv-text';
-    $(textId).innerHTML = '<span class="spinner dark"></span> Распознаю…';
+    $(textId).innerHTML = '<span class="spinner dark"></span>' + T('recognizing');
     UI.hideNotice();
 
     try {
@@ -2054,7 +2379,7 @@ const JobForm = {
       <span style="font-size:14px;flex-shrink:0">${icon}</span>
       <div style="flex:1;min-width:0">
         <span style="font-size:12px;font-weight:600">${escapeHtml(shortName)}</span>
-        <span style="font-size:11px;color:${color};margin-left:6px">${label}${item.isSaved ? '' : ' ·  не сохр.'}</span>
+        <span style="font-size:11px;color:${color};margin-left:6px">${label}${item.isSaved ? '' : T('notSaved')}</span>
       </div>
       <button class="btn btn-icon" style="padding:4px;font-size:13px" onclick="${viewAction}">👁</button>
       <button class="btn btn-icon" style="padding:4px;font-size:13px;color:var(--red)" onclick="${removeAction}">🗑</button>
@@ -2063,7 +2388,7 @@ const JobForm = {
 
   previewPending(kind, idx) {
     const file = state.pending[kind][idx];
-    if (file) { try { window.open(URL.createObjectURL(file), '_blank'); } catch(e) { alert('Предпросмотр недоступен: ' + e.message); } }
+    if (file) { try { window.open(URL.createObjectURL(file), '_blank'); } catch(e) { alert(T('previewError') + e.message); } }
   },
 
   removePending(kind, idx) {
@@ -2077,7 +2402,7 @@ const JobForm = {
   },
 
   async deleteSaved(id, path) {
-    if (!confirm('Удалить файл?')) return;
+    if (!confirm(T('deleteFile'))) return;
     await Api.deleteAttachment(id, path);
     if (state.editingJobId) await this._loadAttachments(state.editingJobId);
   },
@@ -2180,7 +2505,7 @@ const Settings = {
       }
     }
 
-    if (btn) { btn.textContent = '✅ Сохранено!'; btn.disabled = false; }
+    if (btn) { btn.textContent = T('settingsSaved'); btn.disabled = false; }
     setTimeout(() => {
       if (btn) btn.textContent = 'Сохранить';
       UI.showScreen('list');
@@ -2516,6 +2841,7 @@ const App = {
     this.showScreen('list');
 
     if (profile.role === ROLES.ADMIN) $('admin-btn').style.display = 'flex';
+    applyI18n();
   },
 
   /** Load user's companies and jobs in parallel */
@@ -2535,14 +2861,14 @@ const App = {
   },
 
   async deleteJob(id) {
-    if (!confirm('Удалить этот джоб?')) return;
+    if (!confirm(T('deleteJob'))) return;
     try {
       await Api.deleteAttachmentsForJob(id);
       await Api.deleteJob(id);
       state.jobs = state.jobs.filter(j => j.id !== id);
       List.render();
     } catch (err) {
-      alert('Ошибка удаления: ' + err.message);
+      alert(T('deleteError') + err.message);
     }
   },
 
@@ -2594,6 +2920,7 @@ document.addEventListener('paste', async (e) => {
 /* ════════════════════════════════════════════════════════════
  * BOOTSTRAP
  * ════════════════════════════════════════════════════════════ */
+applyI18n();
 sb.auth.onAuthStateChange((event, session) => App.init(session));
 </script>
 </body>
