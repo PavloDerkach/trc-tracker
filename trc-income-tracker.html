@@ -374,13 +374,13 @@ hr { border: none; border-top: 1px solid var(--border); }
 .mini-card-actions { display: flex; gap: 2px; }
 
 .month-group  { margin-bottom: 12px; }
-.month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--rs); cursor: pointer; transition: border-color .15s; }
+.month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--rs); cursor: pointer; transition: border-color .15s; gap: 8px; }
 .month-header:hover { border-color: var(--muted); }
 .month-header.expanded { border-radius: var(--rs) var(--rs) 0 0; }
 .month-label  { font-size: 14px; font-weight: 700; color: var(--text); }
 .month-count  { font-size: 11px; color: var(--muted); margin-left: 8px; font-weight: 400; }
-.month-stats  { display: flex; gap: 16px; align-items: center; }
-.month-stat   { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.month-stats  { display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+.month-stat   { font-size: 11px; color: var(--muted); white-space: nowrap; text-align: right; }
 .month-stat strong { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 .month-stat.due strong   { color: var(--red); }
 .month-stat.clear strong { color: var(--green); }
@@ -979,9 +979,9 @@ var TRANSLATIONS = {
     paymentPaid:     'Оплачено полностью',
     paymentClarify:  'Требует уточнения',
     employerStatus:  '5. Статус обработки работодателем',
-    employerPending:    'Не начато',
-    employerInProgress: 'В процессе',
-    employerDone:       'Обработано',
+    employerPending:    'Не апрувнуто',
+    employerInProgress: 'На апруве',
+    employerDone:       'Апрувнуто',
     calcTitle:       'Расчёт выплаты',
     totalMe:         'ИТОГО МНЕ',
     leadComm:        '− Lead Commission ({pct})',
@@ -1117,9 +1117,9 @@ var TRANSLATIONS = {
     paymentPaid:     'Paid in Full',
     paymentClarify:  'Needs Clarification',
     employerStatus:  '5. Employer Processing Status',
-    employerPending:    'Not Started',
-    employerInProgress: 'In Progress',
-    employerDone:       'Processed',
+    employerPending:    'Pending Approval',
+    employerInProgress: 'Approval: In Progress',
+    employerDone:       'Approved ✓',
     calcTitle:       'Payout Breakdown',
     totalMe:         'MY TOTAL',
     leadComm:        '− Lead Commission ({pct})',
@@ -1314,10 +1314,10 @@ function fmtPercent(ratio) {
 }
 
 function pluralizeJobs(n) {
-  if (_lang === 'en') return T('jobs2', {n});
-  if (n === 1) return T('jobs', {n});
-  if (n < 5)   return T('jobs2', {n});
-  return T('jobs5', {n});
+  if (_lang === 'en') return n === 1 ? 'job' : 'jobs';
+  if (n === 1) return 'джоб';
+  if (n < 5)   return 'джоба';
+  return 'джобов';
 }
 
 function fmtMonthKey(key) {
@@ -1789,9 +1789,39 @@ const List = {
   },
 
   _renderGridView(byId) {
-    $('jobs-list').innerHTML = `<div class="jobs-grid">${
-      state.jobs.map(j => this._renderGridCard(j, byId[j.company_id])).join('')
-    }</div>`;
+    const groups = this._groupByMonth();
+    const sortedKeys = Object.keys(groups).sort().reverse();
+    // Use separate storage key; auto-open first month only on first visit
+    const openData = Storage.get('grid_months_open');
+    let open;
+    if (openData === null) {
+      open = new Set(sortedKeys[0] ? [sortedKeys[0]] : []);
+      Storage.setJSON('grid_months_open', [...open]);
+    } else {
+      open = new Set(Storage.getJSON('grid_months_open', []));
+    }
+
+    $('jobs-list').innerHTML = sortedKeys.map(key => {
+      const jobs = groups[key];
+      const expanded = open.has(key);
+      return `<div class="month-group">
+        <div class="month-header ${expanded ? 'expanded' : ''}" onclick="List.toggleGridMonth('${key}')">
+          <div>
+            <span class="month-label">${fmtMonthKey(key)}</span>
+            <span class="month-count">${jobs.length} ${pluralizeJobs(jobs.length)}</span>
+          </div>
+          <span class="chevron ${expanded ? 'open' : ''}" style="font-size:12px;color:var(--muted)">▾</span>
+        </div>
+        ${expanded ? `<div style="padding:10px 0 2px"><div class="jobs-grid">${jobs.map(j => this._renderGridCard(j, byId[j.company_id])).join('')}</div></div>` : ''}
+      </div>`;
+    }).join('');
+  },
+
+  toggleGridMonth(key) {
+    const open = new Set(Storage.getJSON('grid_months_open', []));
+    if (open.has(key)) open.delete(key); else open.add(key);
+    Storage.setJSON('grid_months_open', [...open]);
+    this.render();
   },
 
   _renderGridCard(job, company) {
@@ -1819,8 +1849,15 @@ const List = {
   _renderMonthView(byId) {
     const groups = this._groupByMonth();
     const sortedKeys = Object.keys(groups).sort().reverse();
-    const open = new Set(Storage.getJSON('months_open', []));
-    if (open.size === 0 && sortedKeys[0]) open.add(sortedKeys[0]);
+    // Auto-open first month only on first visit, allow full collapse after
+    const openData = Storage.get('months_open');
+    let open;
+    if (openData === null) {
+      open = new Set(sortedKeys[0] ? [sortedKeys[0]] : []);
+      Storage.setJSON('months_open', [...open]);
+    } else {
+      open = new Set(Storage.getJSON('months_open', []));
+    }
 
     $('jobs-list').innerHTML = sortedKeys.map(key => {
       const jobs = groups[key];
