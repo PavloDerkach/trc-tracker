@@ -72,7 +72,6 @@
     async function _ensureFreshToken() {
       const s = _loadSession();
       if (!s) return;
-      // Refresh if expires within 60 seconds
       if (s.expires_at && s.expires_at < Math.round(Date.now() / 1000) + 60) {
         await _refreshSession();
       }
@@ -99,7 +98,6 @@
       let data = null;
       try { data = text ? JSON.parse(text) : null; } catch { data = text; }
       if (!res.ok) {
-        // On 401 try refresh once
         if (res.status === 401 && !opts._retried) {
           const refreshed = await _refreshSession();
           if (refreshed) return _request(method, url, { ...opts, _retried: true });
@@ -156,7 +154,6 @@
 
       onAuthStateChange(callback) {
         _authListeners.push(callback);
-        // Emit initial session asynchronously
         setTimeout(() => {
           const session = _loadSession();
           if (session && session.expires_at && session.expires_at > Date.now() / 1000) {
@@ -192,7 +189,6 @@
         then(resolve, reject) {
           let url = restUrl + '/' + state.table;
           const params = [];
-          // select goes in URL params for all methods (PostgREST requires it)
           params.push('select=' + encodeURIComponent(state.select));
           state.filters.forEach(f => params.push(f));
           if (state.order) params.push('order=' + state.order);
@@ -213,12 +209,10 @@
 
     function from(table) { return _buildQuery(table); }
 
-    // ── RPC ─────────────────────────────────────────────────
     async function rpc(fn, params = {}) {
       return _request('POST', restUrl + '/rpc/' + fn, { body: params });
     }
 
-    // ── Storage ─────────────────────────────────────────────
     const storage = {
       from(bucket) {
         return {
@@ -283,9 +277,6 @@
 })();
 </script>
 <style>
-/* ════════════════════════════════════════════════════════════
-   DESIGN TOKENS
-   ════════════════════════════════════════════════════════════ */
 :root {
   --bg:        #f5f4f1;
   --card:      #ffffff;
@@ -306,9 +297,6 @@
   --rs:  8px;
 }
 
-/* ════════════════════════════════════════════════════════════
-   RESET + BASE
-   ════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
@@ -319,9 +307,6 @@ body {
 }
 hr { border: none; border-top: 1px solid var(--border); }
 
-/* ════════════════════════════════════════════════════════════
-   LAYOUT
-   ════════════════════════════════════════════════════════════ */
 .screen        { display: none; min-height: 100vh; padding-bottom: 80px; }
 .screen.active { display: block; }
 .center-screen {
@@ -349,16 +334,10 @@ hr { border: none; border-top: 1px solid var(--border); }
   padding: 12px 16px;
 }
 
-/* ════════════════════════════════════════════════════════════
-   CARDS
-   ════════════════════════════════════════════════════════════ */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
 .card-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
 .info-box { background: #f0efec; border-radius: var(--rs); padding: 12px 14px; font-size: 12px; color: #5a5750; line-height: 1.6; }
 
-/* ════════════════════════════════════════════════════════════
-   SUMMARY CARD
-   ════════════════════════════════════════════════════════════ */
 .summary-card { background: var(--accent); color: #fff; border-radius: var(--r); padding: 18px; }
 .summary-amount { font-size: 38px; font-weight: 700; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
 .summary-amount.green { color: #4ade80; }
@@ -373,9 +352,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .summary-row.bold .lbl { color: rgba(255,255,255,.9); font-weight: 600; }
 .summary-row.bold .val { color: #fff; font-weight: 700; }
 
-/* ════════════════════════════════════════════════════════════
-   LIST VIEWS
-   ════════════════════════════════════════════════════════════ */
 .view-toggle { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 100px; padding: 2px; gap: 2px; }
 .view-toggle button {
   background: transparent; border: none; color: var(--muted);
@@ -385,7 +361,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 }
 .view-toggle button.active { background: var(--accent); color: #fff; }
 
-/* Grid view */
 .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
 .mini-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--rs); padding: 10px 12px; cursor: pointer; transition: opacity .1s, border-color .15s; }
 .mini-card:hover  { border-color: var(--muted); }
@@ -398,7 +373,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .mini-card-foot  { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .mini-card-actions { display: flex; gap: 2px; }
 
-/* Month view */
 .month-group  { margin-bottom: 12px; }
 .month-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--rs); cursor: pointer; transition: border-color .15s; }
 .month-header:hover { border-color: var(--muted); }
@@ -428,7 +402,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .mr-payout{ text-align: right; font-size: 14px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
 .mr-payout.red { color: var(--red); }
 
-/* Payment status badge */
 .payment-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 100px;
@@ -439,15 +412,11 @@ hr { border: none; border-top: 1px solid var(--border); }
 .payment-badge.paid    { background: var(--green-bg);  color: var(--green); }
 .payment-badge.clarify { background: var(--blue-bg);   color: var(--blue);  }
 
-/* Employer status badge */
 .employer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
 .employer-badge.pending     { background: #f0efec; color: #6b6660; }
 .employer-badge.in_progress { background: #fff4e6; color: #a05000; }
 .employer-badge.done        { background: #f3e8ff; color: #6b21a8; }
 
-/* ════════════════════════════════════════════════════════════
-   BUTTONS
-   ════════════════════════════════════════════════════════════ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 8px; border: none; cursor: pointer;
@@ -486,9 +455,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 }
 .dashed-btn:hover { border-color: var(--accent); color: var(--text); }
 
-/* ════════════════════════════════════════════════════════════
-   FORM FIELDS
-   ════════════════════════════════════════════════════════════ */
 .field-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; }
 .field-label.yellow { color: #b45309; font-weight: 600; }
 .field-input {
@@ -511,9 +477,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-/* ════════════════════════════════════════════════════════════
-   UPLOAD ZONES
-   ════════════════════════════════════════════════════════════ */
 .upload-zone {
   border: 2px dashed var(--border); border-radius: 10px;
   padding: 18px; text-align: center; cursor: pointer;
@@ -535,9 +498,6 @@ hr { border: none; border-top: 1px solid var(--border); }
   font-family: inherit; font-size: 10px; font-weight: 600;
 }
 
-/* ════════════════════════════════════════════════════════════
-   CALCULATION CARD
-   ════════════════════════════════════════════════════════════ */
 .calc-card { background: var(--accent); color: #fff; border-radius: var(--r); overflow: hidden; }
 .calc-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
 .calc-header-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.5); font-weight: 600; }
@@ -556,16 +516,10 @@ hr { border: none; border-top: 1px solid var(--border); }
 .calc-total-val.green { color: #4ade80; }
 .calc-total-val.red   { color: #f87171; }
 
-/* ════════════════════════════════════════════════════════════
-   PAYMENT SECTION (in form)
-   ════════════════════════════════════════════════════════════ */
 .payment-section { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
 .payment-header  { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--card); cursor: pointer; }
 .payment-body    { padding: 16px; border-top: 1px solid var(--border); background: var(--card); display: flex; flex-direction: column; gap: 12px; }
 
-/* ════════════════════════════════════════════════════════════
-   NOTICES
-   ════════════════════════════════════════════════════════════ */
 .notice { border-radius: var(--rs); padding: 12px 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
 .notice.success { background: var(--green-bg); color: #155e36; border: 1px solid #a7f3c8; }
 .notice.error   { background: var(--red-bg);   color: #7f1d1d; border: 1px solid #fca5a5; }
@@ -575,9 +529,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .notice-title { font-weight: 700; margin-bottom: 4px; }
 .notice-text  { font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; max-height: 100px; overflow: auto; background: rgba(0,0,0,.05); padding: 6px; border-radius: 4px; margin-top: 4px; }
 
-/* ════════════════════════════════════════════════════════════
-   AUTH SCREEN
-   ════════════════════════════════════════════════════════════ */
 .auth-logo  { font-size: 52px; margin-bottom: 16px; }
 .auth-title { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 8px; text-align: center; }
 .auth-sub   { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
@@ -585,17 +536,11 @@ hr { border: none; border-top: 1px solid var(--border); }
 .auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 4px; }
 .auth-toggle span { color: var(--accent); cursor: pointer; font-weight: 600; text-decoration: underline; }
 
-/* ════════════════════════════════════════════════════════════
-   SETTINGS / COMPANIES
-   ════════════════════════════════════════════════════════════ */
 .co-item   { display: flex; align-items: flex-start; justify-content: space-between; }
 .co-name   { font-weight: 600; font-size: 15px; }
 .co-pct    { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .co-notes  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-/* ════════════════════════════════════════════════════════════
-   ADMIN
-   ════════════════════════════════════════════════════════════ */
 .user-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 8px; }
 .user-row:last-child { border-bottom: none; }
 .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; }
@@ -605,9 +550,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .badge-pending   { background: var(--border);   color: var(--muted); }
 .badge-suspended { background: var(--red-bg);   color: var(--red); }
 
-/* ════════════════════════════════════════════════════════════
-   HISTORY TIMELINE
-   ════════════════════════════════════════════════════════════ */
 .history-item   { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .history-item:last-child { border-bottom: none; }
 .history-meta   { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -623,9 +565,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 .diff-old     { color: var(--red);   text-decoration: line-through; }
 .diff-new     { color: var(--green); font-weight: 600; }
 
-/* ════════════════════════════════════════════════════════════
-   MISC
-   ════════════════════════════════════════════════════════════ */
 .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
 .spinner.dark    { border-color: rgba(0,0,0,.15); border-top-color: var(--accent); }
 .spinner-full    { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
@@ -638,14 +577,10 @@ hr { border: none; border-top: 1px solid var(--border); }
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════
-     LOADING
-     ════════════════════════════════════════════════════════ -->
 <div id="loading" class="spinner-full">
   <div class="spinner dark" style="width:32px;height:32px;border-width:3px"></div>
 </div>
 
-<!-- Toast notification -->
 <div id="toast" style="
   position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
   background:#1a1814;color:#fff;padding:12px 20px;border-radius:100px;
@@ -653,49 +588,44 @@ hr { border: none; border-top: 1px solid var(--border); }
   opacity:0;transition:opacity .25s,transform .25s;z-index:200;pointer-events:none;
 "></div>
 
-<!-- ════════════════════════════════════════════════════════
-     AUTH
-     ════════════════════════════════════════════════════════ -->
+<!-- AUTH -->
 <div id="screen-auth" class="screen">
   <div class="center-screen">
     <div class="auth-logo">🔧</div>
     <div class="auth-title">TRC Income Tracker</div>
     <div class="auth-sub" id="auth-sub">Войди в свой аккаунт</div>
-    <!-- i18n applied via applyI18n() -->
     <div class="auth-form">
       <div>
         <label class="field-label">Email</label>
         <input id="auth-email" type="email" class="field-input" placeholder="you@example.com" autocomplete="email">
       </div>
       <div>
-        <label class="field-label">Пароль</label>
+        <label class="field-label" data-i18n="password">Пароль</label>
         <input id="auth-password" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div id="auth-name-wrap" style="display:none">
-        <label class="field-label">Имя (необязательно)</label>
+        <label class="field-label" data-i18n="name">Имя (необязательно)</label>
         <input id="auth-name" type="text" class="field-input" placeholder="Павло Деркач">
       </div>
-      <button id="auth-btn" class="btn btn-primary btn-amber" onclick="Auth.submit()">Войти</button>
+      <button id="auth-btn" class="btn btn-primary btn-amber" onclick="Auth.submit()" data-i18n="signIn">Войти</button>
       <div id="auth-error" class="notice error" style="display:none">
         <div class="notice-icon">⚠️</div>
         <div class="notice-body"><div id="auth-error-text"></div></div>
       </div>
       <div class="auth-toggle" id="auth-toggle">
-        Нет аккаунта? <span onclick="Auth.toggleMode()">Зарегистрироваться</span>
+        <span data-i18n="noAccount">Нет аккаунта?</span> <span onclick="Auth.toggleMode()" data-i18n="signUpLink">Зарегистрироваться</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     PENDING / SUSPENDED
-     ════════════════════════════════════════════════════════ -->
+<!-- PENDING / SUSPENDED -->
 <div id="screen-pending" class="screen">
   <div class="center-screen">
     <div style="font-size:52px;margin-bottom:16px">⏳</div>
     <div class="auth-title" data-i18n="pendingTitle">Ожидание одобрения</div>
     <div class="auth-sub" data-i18n="pendingSub">Твоя учётная запись ожидает одобрения администратора.</div>
-    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()">Выйти</button>
+    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()" data-i18n="signOut">Выйти</button>
   </div>
 </div>
 <div id="screen-suspended" class="screen">
@@ -703,13 +633,11 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="font-size:52px;margin-bottom:16px">🚫</div>
     <div class="auth-title" data-i18n="suspendedTitle">Доступ заблокирован</div>
     <div class="auth-sub" data-i18n="suspendedSub">Свяжись с администратором.</div>
-    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()">Выйти</button>
+    <button class="btn btn-secondary" style="max-width:380px;width:100%" onclick="Auth.signOut()" data-i18n="signOut">Выйти</button>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     JOB LIST
-     ════════════════════════════════════════════════════════ -->
+<!-- JOB LIST -->
 <div id="screen-list" class="screen">
   <div class="header">
     <div>
@@ -737,9 +665,7 @@ hr { border: none; border-top: 1px solid var(--border); }
   <button class="fab" onclick="JobForm.open(null)">+</button>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     JOB FORM
-     ════════════════════════════════════════════════════════ -->
+<!-- JOB FORM -->
 <div id="screen-form" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
@@ -747,7 +673,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <!-- Upload row (compact) -->
+    <!-- Upload row -->
     <div class="card" style="padding:12px 16px">
       <div style="display:flex;gap:10px;align-items:center">
         <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8f7f4;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:border-color .15s" id="hcp-zone">
@@ -755,7 +681,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <span style="font-size:18px">📸</span>
           <div style="min-width:0">
             <div class="upload-text" id="hcp-text" data-i18n="hcpLabel" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">HCP скриншот</div>
-            <div style="font-size:10px;color:var(--muted)">или <kbd style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:10px">⌘V</kbd></div>
+            <div style="font-size:10px;color:var(--muted)"><span data-i18n="hcpHint">или</span> <kbd style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:10px">⌘V</kbd></div>
           </div>
         </label>
         <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fffbee;border:1.5px solid var(--yellow-bd);border-radius:var(--rs);cursor:pointer;transition:border-color .15s" id="inv-zone">
@@ -763,7 +689,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <span style="font-size:18px">📄</span>
           <div style="min-width:0">
             <div class="upload-text yellow" id="inv-text" data-i18n="invoiceLabel" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Инвойс з/ч</div>
-            <div style="font-size:10px;color:var(--muted)">Parts Purchase Price</div>
+            <div style="font-size:10px;color:var(--muted)" data-i18n="invoiceHint">Parts Purchase Price</div>
           </div>
         </label>
       </div>
@@ -778,7 +704,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="grid-2">
           <div>
-            <label class="field-label">Job ID</label>
+            <label class="field-label" data-i18n="jobId">Job ID</label>
             <input id="f-jobId" type="text" class="field-input" placeholder="#97230395" autocorrect="off">
           </div>
           <div>
@@ -788,28 +714,28 @@ hr { border: none; border-top: 1px solid var(--border); }
         </div>
         <div>
           <label class="field-label" data-i18n="customerName">Customer Name</label>
-          <input id="f-client" type="text" class="field-input" placeholder="Имя клиента">
+          <input id="f-client" type="text" class="field-input" placeholder="Имя клиента" data-i18n-attr="placeholder" data-i18n="customerPlaceholder">
         </div>
         <div>
           <label class="field-label" data-i18n="leadSource">Lead Source</label>
           <select id="f-company" class="field-input field-select" onchange="JobForm.updateCalc()"></select>
         </div>
         <div>
-          <label class="field-label">Services (описание работ)</label>
-          <textarea id="f-services-desc" class="field-input field-textarea" placeholder="Labour Diagnostic & Repair…"></textarea>
+          <label class="field-label" data-i18n="servicesDesc">Services (описание работ)</label>
+          <textarea id="f-services-desc" class="field-input field-textarea" placeholder="Labour Diagnostic &amp; Repair…"></textarea>
         </div>
         <div class="grid-2">
           <div>
-            <label class="field-label">Services Price ($)</label>
+            <label class="field-label" data-i18n="servicesPrice">Services Price ($)</label>
             <input id="f-services-price" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="JobForm.updateCalc()">
           </div>
           <div>
-            <label class="field-label">Parts Price for Client ($)</label>
+            <label class="field-label" data-i18n="partsClient">Parts Price for Client ($)</label>
             <input id="f-parts-client" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="JobForm.updateCalc()">
           </div>
         </div>
         <div>
-          <label class="field-label yellow">Parts Purchase Price ($) <span style="font-weight:400;color:var(--muted)">— закупочная стоимость</span></label>
+          <label class="field-label yellow"><span data-i18n="partsPurchase">Parts Purchase Price ($)</span> <span style="font-weight:400;color:var(--muted)" data-i18n="partsPurchaseSub">— закупочная стоимость</span></label>
           <input id="f-parts-buy" type="number" step="0.01" class="field-input yellow-input" placeholder="0.00" oninput="JobForm.updateCalc()">
         </div>
         <div>
@@ -824,7 +750,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div class="payment-header" onclick="UI.toggleSection('payment-body','payment-chevron')">
         <div style="display:flex;align-items:center;gap:10px">
           <span data-i18n="paymentStatus" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">4. Статус оплаты</span>
-          <span id="payment-badge-header" class="payment-badge unpaid">Не оплачено</span>
+          <span id="payment-badge-header" class="payment-badge unpaid" data-i18n="paymentUnpaid">Не оплачено</span>
         </div>
         <span class="chevron open" id="payment-chevron">▾</span>
       </div>
@@ -832,18 +758,18 @@ hr { border: none; border-top: 1px solid var(--border); }
         <div>
           <label class="field-label" data-i18n="status">Статус</label>
           <select id="f-payment-status" class="field-input field-select" onchange="JobForm.updatePaymentBadge()">
-            <option value="unpaid">Не оплачено</option>
-            <option value="partial">Частично оплачено</option>
-            <option value="paid">Оплачено полностью</option>
-            <option value="clarify">Требует уточнения</option>
+            <option value="unpaid" data-i18n="paymentUnpaid">Не оплачено</option>
+            <option value="partial" data-i18n="paymentPartial">Частично оплачено</option>
+            <option value="paid" data-i18n="paymentPaid">Оплачено полностью</option>
+            <option value="clarify" data-i18n="paymentClarify">Требует уточнения</option>
           </select>
         </div>
         <div id="paid-amount-wrap">
-          <label class="field-label">Сумма выплаты ($)</label>
+          <label class="field-label" data-i18n="paidAmount">Сумма выплаты ($)</label>
           <input id="f-paid-amount" type="number" step="0.01" class="field-input" placeholder="0.00">
         </div>
         <div>
-          <label class="field-label">Заметка к оплате</label>
+          <label class="field-label" data-i18n="paymentNote">Заметка к оплате</label>
           <input id="f-payment-notes" type="text" class="field-input" placeholder="e.g. E-transfer 14 Apr">
         </div>
       </div>
@@ -854,7 +780,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div class="payment-header" onclick="UI.toggleSection('employer-body','employer-chevron')">
         <div style="display:flex;align-items:center;gap:10px">
           <span data-i18n="employerStatus" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600">5. Статус обработки работодателем</span>
-          <span id="employer-badge-header" class="employer-badge pending">Не начато</span>
+          <span id="employer-badge-header" class="employer-badge pending" data-i18n="employerPending">Не начато</span>
         </div>
         <span class="chevron open" id="employer-chevron">▾</span>
       </div>
@@ -862,9 +788,9 @@ hr { border: none; border-top: 1px solid var(--border); }
         <div>
           <label class="field-label" data-i18n="status">Статус</label>
           <select id="f-employer-status" class="field-input field-select" onchange="JobForm.updateEmployerBadge()">
-            <option value="pending">Не начато</option>
-            <option value="in_progress">В процессе</option>
-            <option value="done">Обработано</option>
+            <option value="pending" data-i18n="employerPending">Не начато</option>
+            <option value="in_progress" data-i18n="employerInProgress">В процессе</option>
+            <option value="done" data-i18n="employerDone">Обработано</option>
           </select>
         </div>
       </div>
@@ -894,9 +820,7 @@ hr { border: none; border-top: 1px solid var(--border); }
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     SETTINGS
-     ════════════════════════════════════════════════════════ -->
+<!-- SETTINGS -->
 <div id="screen-settings" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
@@ -904,11 +828,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <div class="info-box">
-      <strong>Commission %</strong> — доля поставщика от Subtotal (Services + Parts for Client).<br>
-      Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>
-      Твоя доля: <strong id="settings-pct-label">40%</strong> от Net Profit Pool.
-    </div>
+    <div class="info-box" id="settings-info-box"></div>
     <div class="card">
       <div class="card-label" data-i18n="mySharePct">Моя доля</div>
       <div style="display:flex;align-items:center;gap:12px">
@@ -917,25 +837,23 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
     </div>
     <div class="card">
-      <div class="card-label" style="margin-bottom:14px">Gemini API Key</div>
+      <div class="card-label" data-i18n="geminiKey">Gemini API Key</div>
       <input id="s-apikey" type="password" class="field-input" placeholder="AIza…" autocomplete="off">
       <div style="font-size:11px;color:var(--muted);margin-top:6px">
-        Бесплатно: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a>
+        <span data-i18n="geminiFree">Бесплатно:</span> <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a>
       </div>
     </div>
     <div id="companies-list" style="display:flex;flex-direction:column;gap:10px"></div>
-    <button class="dashed-btn" onclick="Settings.addCompany()">＋ Добавить поставщика</button>
+    <button class="dashed-btn" onclick="Settings.addCompany()" data-i18n="addSupplier">＋ Добавить поставщика</button>
     <hr>
-    <button class="btn btn-secondary btn-sm" onclick="Auth.signOut()" style="width:auto;align-self:flex-start">🚪 Выйти</button>
+    <button class="btn btn-secondary btn-sm" onclick="Auth.signOut()" style="width:auto;align-self:flex-start">🚪 <span data-i18n="signOut">Выйти</span></button>
   </div>
   <div class="bottom-bar">
     <button id="settings-save-btn" data-i18n="save" class="btn btn-primary" onclick="Settings.save()">Сохранить</button>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     ADMIN
-     ════════════════════════════════════════════════════════ -->
+<!-- ADMIN -->
 <div id="screen-admin" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
@@ -943,22 +861,16 @@ hr { border: none; border-top: 1px solid var(--border); }
     <div style="width:36px"></div>
   </div>
   <div class="content">
-    <div class="info-box">
-      <strong>tech</strong> — техник, создаёт джобы.<br>
-      <strong>employer</strong> — работодатель, видит джобы своих техников и вносит оплаты.<br>
-      <strong>admin</strong> — полный доступ.
-    </div>
+    <div class="info-box" data-i18n="adminInfo"><strong>tech</strong> — техник, создаёт джобы.<br><strong>employer</strong> — работодатель, видит джобы своих техников и вносит оплаты.<br><strong>admin</strong> — полный доступ.</div>
     <button class="btn btn-primary" data-i18n="inviteUser" onclick="Admin.invite()" style="border-radius:var(--rs)">✉️ Пригласить пользователя</button>
     <div class="card">
-      <div class="card-label" style="margin-bottom:14px">Пользователи</div>
+      <div class="card-label" data-i18n="users" style="margin-bottom:14px">Пользователи</div>
       <div id="admin-users"></div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     HISTORY
-     ════════════════════════════════════════════════════════ -->
+<!-- HISTORY -->
 <div id="screen-history" class="screen">
   <div class="header">
     <button class="btn btn-icon" onclick="App.showScreen('list')" style="margin-left:-8px">←</button>
@@ -968,7 +880,7 @@ hr { border: none; border-top: 1px solid var(--border); }
   <div class="content">
     <div class="card" id="history-job-info"></div>
     <div class="card">
-      <div class="card-label" style="margin-bottom:14px">Лог изменений</div>
+      <div class="card-label" style="margin-bottom:14px" data-i18n="historyLog">Лог изменений</div>
       <div id="history-list"><div class="spinner dark" style="margin:20px auto;display:block"></div></div>
     </div>
   </div>
@@ -976,8 +888,6 @@ hr { border: none; border-top: 1px solid var(--border); }
 
 <script>
 
-// ── Global error handler ─────────────────────────────────────
-// Shows a visible error instead of a white screen
 window.onerror = function(msg, src, line, col, err) {
   document.body.innerHTML = `<div style="padding:32px;font-family:sans-serif;max-width:600px;margin:0 auto">
     <div style="font-size:32px;margin-bottom:16px">⚠️</div>
@@ -995,12 +905,9 @@ window.onunhandledrejection = function(e) {
  * ════════════════════════════════════════════════════════════ */
 var TRANSLATIONS = {
   ru: {
-    // App
     appTitle:        'TRC Income Tracker',
     appSubtitle:     'TRC — Мои доходы',
     jobList:         'Журнал джобов',
-
-    // Auth
     signIn:          'Войти',
     signUp:          'Зарегистрироваться',
     email:           'Email',
@@ -1017,15 +924,11 @@ var TRANSLATIONS = {
     wrongPassword:   'Неверный email или пароль',
     alreadyReg:      'Email уже зарегистрирован. Войди.',
     weakPassword:    'Пароль минимум 6 символов',
-
-    // Screens
     pendingTitle:    'Ожидание одобрения',
     pendingSub:      'Твоя учётная запись ожидает одобрения администратора.',
     suspendedTitle:  'Доступ заблокирован',
     suspendedSub:    'Свяжись с администратором.',
     signOut:         'Выйти',
-
-    // Summary
     myPayout:        'Моя выплата',
     subtotal:        'Subtotal',
     commissions:     '− Комиссии',
@@ -1037,14 +940,10 @@ var TRANSLATIONS = {
     jobs:            '{n} джоб',
     jobs2:           '{n} джоба',
     jobs5:           '{n} джобов',
-
-    // List
     viewGrid:        'Сетка',
     viewMonth:       'По месяцам',
     noJobs:          'Нет джобов. Нажми + чтобы добавить.',
     noCompany:       'нет компании',
-
-    // Form
     newJob:          'Новый джоб',
     editJob:         'Редактировать',
     hcpLabel:        'HCP скриншот',
@@ -1070,24 +969,23 @@ var TRANSLATIONS = {
     saved:           '✅ Джоб сохранён',
     selectSupplier:  'Выбери поставщика заказа',
     saveError:       'Ошибка сохранения: ',
-
-    // Payment
     paymentStatus:   '4. Статус оплаты',
     status:          'Статус',
     paidAmount:      'Сумма выплаты ($)',
     paymentNote:     'Заметка к оплате',
     paymentNotePlaceholder: 'e.g. E-transfer 14 Apr',
-
-    // Employer status
+    paymentUnpaid:   'Не оплачено',
+    paymentPartial:  'Частично оплачено',
+    paymentPaid:     'Оплачено полностью',
+    paymentClarify:  'Требует уточнения',
     employerStatus:  '5. Статус обработки работодателем',
-
-    // Calc
+    employerPending:    'Не начато',
+    employerInProgress: 'В процессе',
+    employerDone:       'Обработано',
     calcTitle:       'Расчёт выплаты',
     totalMe:         'ИТОГО МНЕ',
     leadComm:        '− Lead Commission ({pct})',
     myShareCalc:     '× {pct}% (моя доля)',
-
-    // Settings
     settings:        'Настройки',
     mySharePct:      'Моя доля',
     geminiKey:       'Gemini API Key',
@@ -1095,8 +993,6 @@ var TRANSLATIONS = {
     addSupplier:     '＋ Добавить поставщика',
     settingsSaved:   '✅ Сохранено!',
     settingsInfo:    '<strong>Commission %</strong> — доля поставщика от Subtotal (Services + Parts for Client).<br>Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>Твоя доля: <strong>{pct}%</strong> от Net Profit Pool.',
-
-    // Admin
     admin:           '👑 Администрирование',
     users:           'Пользователи',
     inviteUser:      '✉️ Пригласить пользователя',
@@ -1111,14 +1007,11 @@ var TRANSLATIONS = {
     inviteInvalidRole:'Неверная роль. Допустимые: tech, employer, admin, pending',
     inviteSuccess:   '✅ Пользователь {email}: роль "{role}" при регистрации. Ссылка: {link}',
     inviteError:     'Ошибка: ',
-
-    // History
     historyTitle:    'История изменений',
+    historyLog:      'Лог изменений',
     historyEmpty:    'История изменений пуста',
     created:         'Запись создана',
     noChanges:       'Нет изменений',
-
-    // Misc
     deleteJob:       'Удалить этот джоб?',
     deleteFile:      'Удалить файл?',
     deleteError:     'Ошибка удаления: ',
@@ -1126,6 +1019,9 @@ var TRANSLATIONS = {
     recognizing:     ' Распознаю…',
     recognized:      '✅ Данные извлечены — проверь',
     reviewHint:      'Если данные некорректны — отредактируй поля вручную перед сохранением.',
+    reviewExtracted: '✅ Данные извлечены — проверь',
+    reviewClose:     '×',
+    reviewSource:    'Исходное изображение',
     sourceImage:     'Исходное изображение',
     noApiKey:        'Нет Gemini API Key — добавь в Настройках.',
     files1:          '{n} файл загружено',
@@ -1136,14 +1032,20 @@ var TRANSLATIONS = {
     viewLabel:       'Вид:',
     meLabel:         'Мне:',
     balanceLabel:    'Остаток:',
+    reviewClient:    'Клиент',
+    reviewDate:      'Дата',
+    reviewJobId:     'Job ID',
+    reviewLead:      'Lead Source',
+    reviewServicesPrice: 'Services Price',
+    reviewPartsClient:   'Parts (клиент)',
+    reviewPartsBuy:      'Parts Purchase Price',
+    reviewSupplier:      'Поставщик',
+    deleteSupplier:      'Удалить поставщика?',
   },
   en: {
-    // App
     appTitle:        'TRC Income Tracker',
     appSubtitle:     'TRC — My Income',
     jobList:         'Job Journal',
-
-    // Auth
     signIn:          'Sign In',
     signUp:          'Sign Up',
     email:           'Email',
@@ -1160,15 +1062,11 @@ var TRANSLATIONS = {
     wrongPassword:   'Invalid email or password',
     alreadyReg:      'Email already registered. Sign in.',
     weakPassword:    'Password must be at least 6 characters',
-
-    // Screens
     pendingTitle:    'Awaiting Approval',
     pendingSub:      'Your account is pending administrator approval.',
     suspendedTitle:  'Access Blocked',
     suspendedSub:    'Please contact the administrator.',
     signOut:         'Sign Out',
-
-    // Summary
     myPayout:        'My Payout',
     subtotal:        'Subtotal',
     commissions:     '− Commissions',
@@ -1180,14 +1078,10 @@ var TRANSLATIONS = {
     jobs:            '{n} job',
     jobs2:           '{n} jobs',
     jobs5:           '{n} jobs',
-
-    // List
     viewGrid:        'Grid',
     viewMonth:       'By Month',
     noJobs:          'No jobs. Press + to add.',
     noCompany:       'no company',
-
-    // Form
     newJob:          'New Job',
     editJob:         'Edit Job',
     hcpLabel:        'HCP Screenshot',
@@ -1213,24 +1107,23 @@ var TRANSLATIONS = {
     saved:           '✅ Job saved',
     selectSupplier:  'Please select a lead source',
     saveError:       'Save error: ',
-
-    // Payment
     paymentStatus:   '4. Payment Status',
     status:          'Status',
     paidAmount:      'Amount Paid ($)',
     paymentNote:     'Payment Note',
     paymentNotePlaceholder: 'e.g. E-transfer 14 Apr',
-
-    // Employer status
+    paymentUnpaid:   'Unpaid',
+    paymentPartial:  'Partially Paid',
+    paymentPaid:     'Paid in Full',
+    paymentClarify:  'Needs Clarification',
     employerStatus:  '5. Employer Processing Status',
-
-    // Calc
+    employerPending:    'Not Started',
+    employerInProgress: 'In Progress',
+    employerDone:       'Processed',
     calcTitle:       'Payout Breakdown',
     totalMe:         'MY TOTAL',
     leadComm:        '− Lead Commission ({pct})',
     myShareCalc:     '× {pct}% (my share)',
-
-    // Settings
     settings:        'Settings',
     mySharePct:      'My Share',
     geminiKey:       'Gemini API Key',
@@ -1238,8 +1131,6 @@ var TRANSLATIONS = {
     addSupplier:     '＋ Add Supplier',
     settingsSaved:   '✅ Saved!',
     settingsInfo:    '<strong>Commission %</strong> — supplier share of Subtotal (Services + Parts for Client).<br>Net Profit Pool = Subtotal − Commission − Parts Purchase Price.<br>Your share: <strong>{pct}%</strong> of Net Profit Pool.',
-
-    // Admin
     admin:           '👑 Administration',
     users:           'Users',
     inviteUser:      '✉️ Invite User',
@@ -1254,14 +1145,11 @@ var TRANSLATIONS = {
     inviteInvalidRole:'Invalid role. Allowed: tech, employer, admin, pending',
     inviteSuccess:   '✅ User {email} will have role "{role}" upon registration. Link: {link}',
     inviteError:     'Error: ',
-
-    // History
     historyTitle:    'Change History',
+    historyLog:      'Change Log',
     historyEmpty:    'No change history',
     created:         'Record created',
     noChanges:       'No changes',
-
-    // Misc
     deleteJob:       'Delete this job?',
     deleteFile:      'Delete file?',
     deleteError:     'Delete error: ',
@@ -1269,6 +1157,9 @@ var TRANSLATIONS = {
     recognizing:     ' Recognizing…',
     recognized:      '✅ Data extracted — please verify',
     reviewHint:      'If data is incorrect — edit fields manually before saving.',
+    reviewExtracted: '✅ Data extracted — please verify',
+    reviewClose:     '×',
+    reviewSource:    'Source image',
     sourceImage:     'Source image',
     noApiKey:        'No Gemini API Key — add it in Settings.',
     files1:          '{n} file uploaded',
@@ -1279,15 +1170,25 @@ var TRANSLATIONS = {
     viewLabel:       'View:',
     meLabel:         'Me:',
     balanceLabel:    'Balance:',
+    reviewClient:    'Client',
+    reviewDate:      'Date',
+    reviewJobId:     'Job ID',
+    reviewLead:      'Lead Source',
+    reviewServicesPrice: 'Services Price',
+    reviewPartsClient:   'Parts (client)',
+    reviewPartsBuy:      'Parts Purchase Price',
+    reviewSupplier:      'Supplier',
+    deleteSupplier:      'Delete supplier?',
   },
 };
 
 var _lang = localStorage.getItem('trc_lang') || 'ru';
 
-function T(key, vars = {}) {
-  let str = (TRANSLATIONS[_lang] || TRANSLATIONS.ru)[key] || key;
-  for (const [k, v] of Object.entries(vars)) {
-    str = str.replace(new RegExp('{' + k + '}', 'g'), v);
+function T(key, vars) {
+  vars = vars || {};
+  var str = (TRANSLATIONS[_lang] || TRANSLATIONS.ru)[key] || key;
+  for (var k in vars) {
+    str = str.replace(new RegExp('{' + k + '}', 'g'), vars[k]);
   }
   return str;
 }
@@ -1296,19 +1197,19 @@ function setLang(lang) {
   _lang = lang;
   localStorage.setItem('trc_lang', lang);
   applyI18n();
-  // Re-render dynamic parts
   if (state.user) {
-    const screen = document.querySelector('.screen.active')?.id?.replace('screen-', '');
-    if (screen) App.showScreen(screen);
+    var screen = document.querySelector('.screen.active');
+    var name = screen && screen.id ? screen.id.replace('screen-', '') : null;
+    if (name) App.showScreen(name);
   }
 }
 
 function applyI18n() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const attr = el.getAttribute('data-i18n-attr');
-    const vars = {};
-    [...el.attributes].forEach(a => {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key  = el.getAttribute('data-i18n');
+    var attr = el.getAttribute('data-i18n-attr');
+    var vars = {};
+    Array.from(el.attributes).forEach(function(a) {
       if (a.name.startsWith('data-i18n-var-')) {
         vars[a.name.replace('data-i18n-var-', '')] = a.value;
       }
@@ -1316,13 +1217,13 @@ function applyI18n() {
     if (attr) el.setAttribute(attr, T(key, vars));
     else el.innerHTML = T(key, vars);
   });
-  // Update lang toggle button
-  const btn = document.getElementById('lang-btn');
+  // Handle <option data-i18n> — set textContent only (preserves value attribute)
+  document.querySelectorAll('option[data-i18n]').forEach(function(el) {
+    el.textContent = T(el.getAttribute('data-i18n'));
+  });
+  var btn = document.getElementById('lang-btn');
   if (btn) btn.textContent = _lang === 'ru' ? 'EN' : 'RU';
 }
-
-
-
 
 /* ════════════════════════════════════════════════════════════
  * CONFIGURATION
@@ -1346,20 +1247,23 @@ const ROLES = {
 
 const PAYMENT_STATUS = { UNPAID: 'unpaid', PARTIAL: 'partial', PAID: 'paid', CLARIFY: 'clarify' };
 
+// Dynamic — returns current language labels
 const PAYMENT_LABELS = {
-  [PAYMENT_STATUS.UNPAID]:   'Не оплачено',
-  [PAYMENT_STATUS.PARTIAL]:  'Частично',
-  [PAYMENT_STATUS.PAID]:     'Оплачено',
-  [PAYMENT_STATUS.CLARIFY]:  'Требует уточнения',
+  get unpaid()  { return T('paymentUnpaid'); },
+  get partial() { return T('paymentPartial'); },
+  get paid()    { return T('paymentPaid'); },
+  get clarify() { return T('paymentClarify'); },
 };
 
 const VIEW_MODE = { GRID: 'grid', MONTH: 'month' };
 
 const EMPLOYER_STATUS = { PENDING: 'pending', IN_PROGRESS: 'in_progress', DONE: 'done' };
+
+// Dynamic — returns current language labels
 const EMPLOYER_STATUS_LABELS = {
-  pending:     'Не начато',
-  in_progress: 'В процессе',
-  done:        'Обработано',
+  get pending()     { return T('employerPending'); },
+  get in_progress() { return T('employerInProgress'); },
+  get done()        { return T('employerDone'); },
 };
 
 const MONTH_NAMES = {
@@ -1378,27 +1282,17 @@ const state = {
   jobMap:  {},
   apiKey:  '',
   pending: { hcp: [], invoice: [] },
-  savedAttachments: [],   // attachments already saved in DB (shown when editing)
+  savedAttachments: [],
   editingJobId: null,
 };
 
 /* ════════════════════════════════════════════════════════════
  * UTILITIES
  * ════════════════════════════════════════════════════════════ */
-
-/** Shortcut for document.getElementById */
 const $ = (id) => document.getElementById(id);
-
-/** Today as YYYY-MM-DD string */
 const today = () => new Date().toISOString().slice(0, 10);
-
-/** Sleep helper */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Escape user-supplied text for safe innerHTML insertion.
- * Critical for XSS prevention — apply to ANY user content before rendering.
- */
 function escapeHtml(text) {
   if (text == null) return '';
   return String(text)
@@ -1409,26 +1303,23 @@ function escapeHtml(text) {
     .replace(/'/g, '&#39;');
 }
 
-/** Format number as currency: $1,234.56 (or em dash if invalid) */
 function fmtMoney(n) {
   if (n == null || isNaN(n)) return '—';
   const formatted = '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return n < 0 ? `(${formatted})` : formatted;
 }
 
-/** Format ratio (0.2792) as percentage string ("27.92%") */
 function fmtPercent(ratio) {
   return (Number(ratio) * 100).toFixed(2) + '%';
 }
 
-/** Russian pluralization for "джоб" */
 function pluralizeJobs(n) {
-  if (n === 1) return T('jobs', {n}).replace('{n}', '').trim();
-  if (n < 5)   return T('jobs2', {n}).replace('{n}', '').trim();
-  return T('jobs5', {n}).replace('{n}', '').trim();
+  if (_lang === 'en') return T('jobs2', {n});
+  if (n === 1) return T('jobs', {n});
+  if (n < 5)   return T('jobs2', {n});
+  return T('jobs5', {n});
 }
 
-/** Format YYYY-MM key as "Месяц YYYY" */
 function fmtMonthKey(key) {
   if (key === '0000-00') return _lang === 'en' ? 'No date' : 'Без даты';
   const [y, m] = key.split('-');
@@ -1439,44 +1330,29 @@ function fmtMonthKey(key) {
 /* ════════════════════════════════════════════════════════════
  * BUSINESS LOGIC
  * ════════════════════════════════════════════════════════════ */
-
-/**
- * Calculate payout breakdown for a single job.
- * @param {object} job
- * @param {object} company
- * @returns {{subtotal, commission, pool, payout}}
- */
 function calculatePayout(job, company) {
   if (!company) return { subtotal: 0, commission: 0, pool: 0, payout: 0 };
-
   const services    = Number(job.services_price)       || 0;
   const partsClient = Number(job.parts_client_price)   || 0;
   const partsBuy    = Number(job.parts_purchase_price) || 0;
-
   const subtotal   = services + partsClient;
   const commission = subtotal * company.commission_pct;
   const pool       = subtotal - commission - partsBuy;
   const techPct    = state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT;
   const payout     = pool * techPct;
-
   return { subtotal, commission, pool, payout };
 }
 
 /* ════════════════════════════════════════════════════════════
- * API KEY STORAGE — three-tier persistence
- * Tier 1: Supabase profile (cross-device, survives incognito)
- * Tier 2: localStorage   (survives browser restarts in regular mode)
- * Tier 3: sessionStorage (survives page refreshes in incognito)
+ * API KEY STORAGE
  * ════════════════════════════════════════════════════════════ */
 const ApiKeyStore = {
   KEY: 'trc_gemini_key',
-
   save(key) {
     if (!key) return;
     try { localStorage.setItem(this.KEY, key); }   catch {}
     try { sessionStorage.setItem(this.KEY, key); } catch {}
   },
-
   load() {
     let key = '';
     try { key = localStorage.getItem(this.KEY)   || key; } catch {}
@@ -1484,19 +1360,16 @@ const ApiKeyStore = {
     return key;
   },
 };
+
 const Storage = {
   _key(key) { return `trc_${key}_${state.user?.id || 'anon'}`; },
-
   get(key) { return localStorage.getItem(this._key(key)); },
   set(key, value) { localStorage.setItem(this._key(key), value); },
-
   getJSON(key, fallback) {
     try {
       const raw = this.get(key);
       return raw ? JSON.parse(raw) : fallback;
-    } catch {
-      return fallback;
-    }
+    } catch { return fallback; }
   },
   setJSON(key, value) { this.set(key, JSON.stringify(value)); },
 };
@@ -1507,10 +1380,9 @@ const Storage = {
 const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
 /* ════════════════════════════════════════════════════════════
- * API — data access layer
+ * API
  * ════════════════════════════════════════════════════════════ */
 const Api = {
-  // ─── Profiles ───────────────────────────────────────────
   async fetchProfile(userId) {
     const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
     if (error && error.status !== 406) console.warn('fetchProfile error:', error);
@@ -1525,8 +1397,6 @@ const Api = {
     const { error } = await sb.from('profiles').update(updates).eq('id', userId);
     if (error) throw new Error(error.message || 'Failed to update profile');
   },
-
-  // ─── Companies ──────────────────────────────────────────
   async fetchCompanies(userId) {
     const { data, error } = await sb.from('companies').select('*').eq('user_id', userId).order('sort_order');
     if (error) throw new Error(error.message || 'Failed to fetch companies');
@@ -1547,8 +1417,6 @@ const Api = {
   async createDefaultCompanies(userId) {
     return sb.rpc('insert_default_companies', { p_user_id: userId });
   },
-
-  // ─── Jobs ───────────────────────────────────────────────
   async fetchJobs(userId) {
     const { data, error } = await sb.from('jobs').select('*')
       .eq('user_id', userId).order('job_date', { ascending: false });
@@ -1571,8 +1439,6 @@ const Api = {
   async logJobCreated(id) {
     return sb.rpc('log_job_created', { p_job_id: id });
   },
-
-  // ─── Attachments ────────────────────────────────────────
   async fetchAttachments(jobId) {
     const { data } = await sb.from('attachments').select('*').eq('job_id', jobId);
     return data || [];
@@ -1600,8 +1466,6 @@ const Api = {
     const { data } = await sb.storage.from('screenshots').createSignedUrl(path, 3600);
     return data?.signedUrl;
   },
-
-  // ─── History ────────────────────────────────────────────
   async fetchJobHistory(jobId) {
     const { data } = await sb.from('job_history')
       .select('*, changer:changed_by(email, full_name)')
@@ -1612,7 +1476,7 @@ const Api = {
 };
 
 /* ════════════════════════════════════════════════════════════
- * GEMINI AI — image → structured data extraction
+ * GEMINI AI
  * ════════════════════════════════════════════════════════════ */
 const Gemini = {
   PROMPTS: {
@@ -1635,10 +1499,6 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
 {"partsPurchasePrice":number|null,"supplier":string|null}`,
   },
 
-  /**
-   * Convert a file to base64 representation suitable for Gemini.
-   * PDFs are passed as application/pdf; images are downscaled & re-encoded as JPEG.
-   */
   async fileToBase64(file) {
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
       return { mimeType: 'application/pdf', data: await this._readBase64(file) };
@@ -1664,10 +1524,7 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
   },
 
   async _loadImage(file) {
-    // Try createImageBitmap first (Brave-safe)
-    try { return await createImageBitmap(file); }
-    catch {}
-    // Fallback: FileReader to base64 → Image
+    try { return await createImageBitmap(file); } catch {}
     return new Promise((resolve, reject) => {
       try {
         const url = URL.createObjectURL(file);
@@ -1676,7 +1533,6 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
         img.onerror = () => reject(new Error('Не удалось открыть изображение'));
         img.src = url;
       } catch {
-        // Last resort: read as data URL via FileReader
         const reader = new FileReader();
         reader.onload  = e => {
           const img = new Image();
@@ -1727,27 +1583,18 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
     return JSON.parse(cleaned.slice(start, end + 1));
   },
 
-  /**
-   * Analyze multiple files of the same type. Merges fields from each file,
-   * preferring the first non-null value for each field.
-   * @param {File[]} files
-   * @param {'hcp'|'invoice'} mode
-   */
   async analyze(files, mode) {
     const prompt = this.PROMPTS[mode];
     const merged = {};
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const { mimeType, data } = await this.fileToBase64(file);
-      // For HCP mode: second and later files should NOT override clientName
-      // (they may show technician name or other info, not the customer)
       const filePrompt = (mode === 'hcp' && i > 0)
         ? prompt + '\n\nNOTE: This is an additional screenshot. Only extract fields that are EMPTY so far. Do NOT extract clientName from this image.'
         : prompt;
       const parts = [{ inlineData: { mimeType, data } }, { text: filePrompt }];
       const parsed = this._parseJson(await this._call(parts));
       for (const [key, value] of Object.entries(parsed)) {
-        // First file always wins for clientName; other fields take first non-null
         if (key === 'clientName' && i > 0) continue;
         if (value != null && merged[key] == null) merged[key] = value;
       }
@@ -1757,17 +1604,15 @@ partsPurchasePrice: use subtotal before tax if tax shown separately, otherwise t
 };
 
 /* ════════════════════════════════════════════════════════════
- * UI — generic helpers
+ * UI
  * ════════════════════════════════════════════════════════════ */
 const UI = {
-  /** Switch active screen by name */
   showScreen(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     $(`screen-${name}`)?.classList.add('active');
     window.scrollTo(0, 0);
   },
 
-  /** Show a notice in the form. Long messages get a code-block treatment. */
   showNotice(type, text) {
     const el = $('form-notice');
     const isLong = text.length > 60;
@@ -1785,7 +1630,6 @@ const UI = {
     el.style.display = 'block';
   },
 
-  /** Show a brief toast notification */
   showToast(message, durationMs = 2500) {
     const el = $('toast');
     el.textContent = message;
@@ -1800,7 +1644,6 @@ const UI = {
 
   hideNotice() { $('form-notice').style.display = 'none'; },
 
-  /** Set button content and disabled state */
   setButton(id, html, disabled = false) {
     const btn = $(id);
     if (!btn) return;
@@ -1808,7 +1651,6 @@ const UI = {
     btn.disabled = disabled;
   },
 
-  /** Toggle a collapsible section */
   toggleSection(bodyId, chevronId) {
     $(bodyId)?.classList.toggle('open');
     $(chevronId)?.classList.toggle('open');
@@ -1823,14 +1665,12 @@ const Auth = {
 
   toggleMode() {
     this.isRegisterMode = !this.isRegisterMode;
-    $('auth-sub').textContent     = this.isRegisterMode
-      ? 'Создай аккаунт — администратор одобрит доступ'
-      : 'Войди в свой аккаунт';
-    $('auth-btn').textContent     = this.isRegisterMode ? 'Зарегистрироваться' : 'Войти';
+    $('auth-sub').textContent     = this.isRegisterMode ? T('signUpSub') : T('signInSub');
+    $('auth-btn').textContent     = this.isRegisterMode ? T('signUp') : T('signIn');
     $('auth-name-wrap').style.display = this.isRegisterMode ? 'block' : 'none';
     $('auth-toggle').innerHTML    = this.isRegisterMode
-      ? 'Уже есть аккаунт? <span onclick="Auth.toggleMode()">Войти</span>'
-      : 'Нет аккаунта? <span onclick="Auth.toggleMode()">Зарегистрироваться</span>';
+      ? `${T('haveAccount')} <span onclick="Auth.toggleMode()">${T('signInLink')}</span>`
+      : `${T('noAccount')} <span onclick="Auth.toggleMode()">${T('signUpLink')}</span>`;
     $('auth-error').style.display = 'none';
   },
 
@@ -1838,10 +1678,10 @@ const Auth = {
     const email    = $('auth-email').value.trim();
     const password = $('auth-password').value;
     if (!email || !password) {
-      this._showError('Заполни email и пароль');
+      this._showError(T('fillFields'));
       return;
     }
-    UI.setButton('auth-btn', '<span class="spinner"></span> Загрузка…', true);
+    UI.setButton('auth-btn', '<span class="spinner"></span> …', true);
     $('auth-error').style.display = 'none';
     try {
       if (this.isRegisterMode) {
@@ -1850,7 +1690,7 @@ const Auth = {
           options: { emailRedirectTo: CONFIG.REDIRECT_URL },
         });
         if (error) throw error;
-        this._showError('✅ Проверь email — подтверди регистрацию.');
+        this._showError(T('checkEmail'));
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -1858,13 +1698,11 @@ const Auth = {
     } catch (err) {
       this._showError(this._humanizeError(err.message || String(err)));
     } finally {
-      UI.setButton('auth-btn', this.isRegisterMode ? 'Зарегистрироваться' : 'Войти', false);
+      UI.setButton('auth-btn', this.isRegisterMode ? T('signUp') : T('signIn'), false);
     }
   },
 
-  async signOut() {
-    await sb.auth.signOut();
-  },
+  async signOut() { await sb.auth.signOut(); },
 
   _humanizeError(msg) {
     if (msg.includes('Invalid login'))      return T('wrongPassword');
@@ -1880,12 +1718,11 @@ const Auth = {
 };
 
 /* ════════════════════════════════════════════════════════════
- * LIST — job list rendering with grid/month views
+ * LIST
  * ════════════════════════════════════════════════════════════ */
 const List = {
   render() {
     const byId = Object.fromEntries(state.companies.map(c => [c.id, c]));
-
     this._renderSummary(byId);
 
     if (!state.jobs.length) {
@@ -1906,10 +1743,7 @@ const List = {
     else                          this._renderGridView(byId);
   },
 
-  setView(view) {
-    Storage.set('view', view);
-    this.render();
-  },
+  setView(view) { Storage.set('view', view); this.render(); },
 
   toggleMonth(key) {
     const open = new Set(Storage.getJSON('months_open', []));
@@ -1917,8 +1751,6 @@ const List = {
     Storage.setJSON('months_open', [...open]);
     this.render();
   },
-
-  /* ── Private rendering ──────────────────────────────── */
 
   _renderSummary(byId) {
     const totals = state.jobs.reduce((acc, j) => {
@@ -1972,13 +1804,13 @@ const List = {
         <div class="mini-card-amt ${p.payout < 0 ? 'red' : ''}">${fmtMoney(p.payout)}</div>
       </div>
       <div class="mini-card-meta">${escapeHtml(job.job_date) || '—'}${job.job_id ? ` · #${escapeHtml(job.job_id)}` : ''}</div>
-      <div class="mini-card-meta">${company ? escapeHtml(company.name) : '<span style="color:var(--red)">нет компании</span>'}</div>
+      <div class="mini-card-meta">${company ? escapeHtml(company.name) : `<span style="color:var(--red)">${T('noCompany')}</span>`}</div>
       <div class="mini-card-foot">
         <span class="payment-badge ${ps}">${PAYMENT_LABELS[ps]}${partialNote}</span>
         <span class="employer-badge ${job.employer_status || 'pending'}">${EMPLOYER_STATUS_LABELS[job.employer_status || 'pending']}</span>
         <div class="mini-card-actions">
-          <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();History.open(state.jobMap['${job.id}'])" title="История">🕐</button>
-          <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();App.deleteJob('${job.id}')" title="Удалить">🗑</button>
+          <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();History.open(state.jobMap['${job.id}'])" title="History">🕐</button>
+          <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();App.deleteJob('${job.id}')" title="Delete">🗑</button>
         </div>
       </div>
     </div>`;
@@ -2025,8 +1857,8 @@ const List = {
     return `<div class="month-row" onclick="JobForm.open(state.jobMap['${job.id}'])">
       <span class="mr-date">${escapeHtml(day)}</span>
       <div class="mr-info">
-        <div class="mr-name">${escapeHtml(job.client_name) || 'Без имени'}${job.job_id ? ` <span style="color:var(--muted);font-weight:400">#${escapeHtml(job.job_id)}</span>` : ''}</div>
-        <div class="mr-source">${company ? escapeHtml(company.name) : 'нет компании'}</div>
+        <div class="mr-name">${escapeHtml(job.client_name) || T('noName')}${job.job_id ? ` <span style="color:var(--muted);font-weight:400">#${escapeHtml(job.job_id)}</span>` : ''}</div>
+        <div class="mr-source">${company ? escapeHtml(company.name) : T('noCompany')}</div>
       </div>
       <div class="mr-status"><span class="payment-badge ${ps}">${PAYMENT_LABELS[ps]}</span></div>
       <div class="mr-payout ${p.payout < 0 ? 'red' : ''}">${fmtMoney(p.payout)}</div>
@@ -2047,7 +1879,6 @@ const List = {
  * JOB FORM
  * ════════════════════════════════════════════════════════════ */
 const JobForm = {
-  /** Open the form for a new or existing job */
   open(job) {
     state.editingJobId = job?.id ?? null;
     state.pending = { hcp: [], invoice: [] };
@@ -2070,7 +1901,7 @@ const JobForm = {
   },
 
   _populateCompanySelect() {
-    $('f-company').innerHTML = "<option value=\"\">" + T('selectCompany') + "</option>" +
+    $('f-company').innerHTML = `<option value="">${T('selectCompany')}</option>` +
       state.companies.map(c =>
         `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${fmtPercent(c.commission_pct)})</option>`
       ).join('');
@@ -2104,7 +1935,6 @@ const JobForm = {
     set('f-employer-status', EMPLOYER_STATUS.PENDING);
   },
 
-  /** Collect form inputs into a row object for DB insert/update */
   _collectInputs() {
     return {
       user_id:              state.user.id,
@@ -2127,15 +1957,11 @@ const JobForm = {
 
   async save() {
     const row = this._collectInputs();
-    if (!row.company_id) {
-      UI.showNotice('error', T('selectSupplier'));
-      return;
-    }
+    if (!row.company_id) { UI.showNotice('error', T('selectSupplier')); return; }
 
     const btn = $('save-btn');
-    const originalText = btn?.textContent || 'Сохранить';
+    const originalText = btn?.textContent || T('save');
     if (btn) { btn.innerHTML = '<span class="spinner"></span> ' + T('saving'); btn.disabled = true; }
-
     const resetBtn = () => { if (btn) { btn.textContent = originalText; btn.disabled = false; } };
 
     try {
@@ -2149,7 +1975,6 @@ const JobForm = {
         await Api.logJobCreated(jobId).catch(() => {});
       }
 
-      // Upload attachments (non-blocking — errors don't abort save)
       const uploads = [
         ...state.pending.hcp.map(f     => Api.uploadAttachment(f, jobId, 'hcp',     state.user.id)),
         ...state.pending.invoice.map(f => Api.uploadAttachment(f, jobId, 'invoice', state.user.id)),
@@ -2165,32 +1990,21 @@ const JobForm = {
       resetBtn();
       const msg = err.message || String(err);
       UI.showNotice('error', msg);
-      // Also alert so it's impossible to miss
       alert(T('saveError') + msg);
     }
   },
 
-  /* ── File handling ──────────────────────────────────── */
-
-  /** File input onChange handler */
   async handleInput(input, mode) {
     const files = Array.from(input.files || []);
     if (files.length) await this._processFiles(files, mode);
     input.value = '';
   },
 
-  /** Drag/drop or paste handler */
   async pasteFiles(files, mode) {
     if (files.length) await this._processFiles(files, mode);
   },
 
-  _processFiles(files, mode) {
-    // Generate descriptive display names based on extracted data
-    // (called after analyze returns data)
-    return files;
-  },
-
-  _getDisplayName(file, mode, data, index) {
+  _getDisplayName(file, mode, data) {
     try {
       if (mode === 'hcp') {
         const jobId = data.jobId ? `#${data.jobId}` : null;
@@ -2201,13 +2015,13 @@ const JobForm = {
         if (jobId && client) return `${jobId} · ${client}`;
         if (jobId) return jobId;
         if (client) return client;
-        if (price) return `HCP скрин · ${price}`;
+        if (price) return `HCP · ${price}`;
       } else {
         const price = data.partsPurchasePrice != null ? `$${Number(data.partsPurchasePrice).toFixed(2)}` : null;
         const supplier = data.supplier;
-        if (supplier && price) return `Инвойс · ${supplier} · ${price}`;
-        if (price) return `Инвойс · ${price}`;
-        if (supplier) return `Инвойс · ${supplier}`;
+        if (supplier && price) return `Invoice · ${supplier} · ${price}`;
+        if (price) return `Invoice · ${price}`;
+        if (supplier) return `Invoice · ${supplier}`;
       }
     } catch {}
     return file.name;
@@ -2221,17 +2035,13 @@ const JobForm = {
     try {
       const data = await Gemini.analyze(files, mode);
       this._applyExtractedData(data, mode);
-      // Attach display names based on extracted data
-      files.forEach((file, i) => {
-        file._displayName = this._getDisplayName(file, mode, data, i);
-      });
+      files.forEach(file => { file._displayName = this._getDisplayName(file, mode, data); });
       state.pending[mode].push(...files);
       this.updateCalc();
       this._renderAttachments();
       this._showReviewPanel(data, mode, files);
-      $(textId).textContent = `✓ ${files.length} файл${files.length > 1 ? 'а' : ''} загружено`;
+      $(textId).textContent = `✓ ${files.length} ${_lang === 'en' ? (files.length > 1 ? 'files' : 'file') : (files.length > 1 ? 'файла' : 'файл')} ${_lang === 'en' ? 'uploaded' : 'загружено'}`;
     } catch (err) {
-      // Save files even on recognition failure
       state.pending[mode].push(...files);
       this._renderAttachments();
       UI.showNotice('error', err.message || String(err));
@@ -2246,32 +2056,23 @@ const JobForm = {
       if (data.jobDate)                set('f-date',            data.jobDate);
       if (data.jobId)                  set('f-jobId',           data.jobId);
       if (data.servicesDescription)    set('f-services-desc',   data.servicesDescription);
-      if (data.servicesPrice    != null) set('f-services-price',data.servicesPrice);
+      if (data.servicesPrice    != null) set('f-services-price', data.servicesPrice);
       if (data.partsClientPrice != null) set('f-parts-client',  data.partsClientPrice);
 
-      // Match company: first try explicit leadSource from Gemini,
-      // then scan all text fields for company name keywords
       let match = data.leadSource ? this._matchCompany(data.leadSource) : null;
       if (!match) {
-        const allText = [
-          data.leadSource,
-          data.servicesDescription,
-          data.clientName,
-        ].filter(Boolean).join(' ');
+        const allText = [data.leadSource, data.servicesDescription, data.clientName].filter(Boolean).join(' ');
         match = this._matchCompanyInText(allText);
       }
       if (match) set('f-company', match.id);
-
     } else if (data.partsPurchasePrice != null) {
       set('f-parts-buy', data.partsPurchasePrice);
     }
   },
 
-  /** Search for any company name keyword anywhere in a text block */
   _matchCompanyInText(text) {
     if (!text) return null;
     const t = text.toLowerCase();
-    // Sort companies by name length desc so "Jiffy On Demand" matches before "Jiffy"
     const sorted = [...state.companies].sort((a, b) => b.name.length - a.name.length);
     return sorted.find(c => {
       const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
@@ -2282,36 +2083,25 @@ const JobForm = {
   _matchCompany(leadSource) {
     if (!leadSource) return null;
     const ls = leadSource.toLowerCase().trim();
-
     return state.companies.find(c => {
       const cn = c.name.toLowerCase();
-      // Full string contains check
       if (cn.includes(ls) || ls.includes(cn)) return true;
-      // Word-by-word: any significant word from leadSource matches company name
       const lsWords = ls.split(/\s+/).filter(w => w.length > 2);
       return lsWords.some(w => cn.includes(w));
     }) || null;
   },
 
-  _buildSuccessMessage(data) {
-    let msg = '✅ Распознано';
-    if (data.leadSource) msg += ` — ${data.leadSource}`;
-    if (data.supplier)   msg += ` — ${data.supplier}`;
-    return msg;
-  },
-
-  /** Show parsed data review panel so user can verify extraction */
   _showReviewPanel(data, mode, files) {
     const fields = mode === 'hcp' ? [
-      ['Клиент',        data.clientName],
-      ['Дата',          data.jobDate],
-      ['Job ID',        data.jobId],
-      ['Lead Source',   data.leadSource],
-      ['Services Price',data.servicesPrice != null ? `$${data.servicesPrice}` : null],
-      ['Parts (клиент)',data.partsClientPrice != null ? `$${data.partsClientPrice}` : null],
+      [T('reviewClient'),       data.clientName],
+      [T('reviewDate'),         data.jobDate],
+      [T('reviewJobId'),        data.jobId],
+      [T('reviewLead'),         data.leadSource],
+      [T('reviewServicesPrice'),data.servicesPrice    != null ? `$${data.servicesPrice}` : null],
+      [T('reviewPartsClient'),  data.partsClientPrice != null ? `$${data.partsClientPrice}` : null],
     ] : [
-      ['Parts Purchase Price', data.partsPurchasePrice != null ? `$${data.partsPurchasePrice}` : null],
-      ['Поставщик',     data.supplier],
+      [T('reviewPartsBuy'),  data.partsPurchasePrice != null ? `$${data.partsPurchasePrice}` : null],
+      [T('reviewSupplier'),  data.supplier],
     ];
 
     const rows = fields
@@ -2321,7 +2111,6 @@ const JobForm = {
         <span style="font-weight:600;text-align:right">${escapeHtml(String(v))}</span>
       </div>`).join('');
 
-    // Show thumbnail of first image for visual comparison
     let thumb = '';
     if (files[0] && files[0].type?.startsWith('image/')) {
       const url = URL.createObjectURL(files[0]);
@@ -2331,21 +2120,17 @@ const JobForm = {
     const el = $('form-notice');
     el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:var(--rs);padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:700;color:#166534">✅ Данные извлечены — проверь</span>
-        <button onclick="this.closest('[style]').remove();$('form-notice').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:16px;color:#166534;padding:0">×</button>
+        <span style="font-size:12px;font-weight:700;color:#166534">${T('reviewExtracted')}</span>
+        <button onclick="this.closest('[style]').remove();$('form-notice').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:16px;color:#166534;padding:0">${T('reviewClose')}</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">
-        <div>${thumb}<div style="font-size:11px;color:var(--muted);text-align:center">Исходное изображение</div></div>
+        <div>${thumb}<div style="font-size:11px;color:var(--muted);text-align:center">${T('reviewSource')}</div></div>
         <div>${rows}</div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:#166534;background:rgba(22,101,52,.08);padding:6px 10px;border-radius:6px">
-        Если данные некорректны — отредактируй поля вручную перед сохранением.
-      </div>
+      <div style="margin-top:10px;font-size:11px;color:#166534;background:rgba(22,101,52,.08);padding:6px 10px;border-radius:6px">${T('reviewHint')}</div>
     </div>`;
     el.style.display = 'block';
   },
-
-  /* ── Attachments display ────────────────────────────── */
 
   async _loadAttachments(jobId) {
     const items = await Api.fetchAttachments(jobId);
@@ -2376,7 +2161,7 @@ const JobForm = {
     const type  = item.isSaved ? item.mime_type : item.file.type;
     const isPdf = (type === 'application/pdf') || name?.endsWith('.pdf');
     const icon  = isPdf ? '📄' : '🖼';
-    const label = item.kind === 'hcp' ? 'HCP' : 'Инвойс';
+    const label = item.kind === 'hcp' ? 'HCP' : (_lang === 'en' ? 'Invoice' : 'Инвойс');
     const color = item.kind === 'hcp' ? '#6b7280' : '#b45309';
 
     const viewAction = item.isSaved
@@ -2386,7 +2171,7 @@ const JobForm = {
       ? `JobForm.deleteSaved('${item.id}','${escapeHtml(item.storage_path)}')`
       : `JobForm.removePending('${item.kind}',${item.idx})`;
 
-    const shortName = name ? (name.length > 28 ? name.slice(0, 25) + '…' : name) : 'Файл';
+    const shortName = name ? (name.length > 28 ? name.slice(0, 25) + '…' : name) : (_lang === 'en' ? 'File' : 'Файл');
 
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8f7f4;border-radius:var(--rs);border:1px solid var(--border)">
       <span style="font-size:14px;flex-shrink:0">${icon}</span>
@@ -2420,8 +2205,6 @@ const JobForm = {
     if (state.editingJobId) await this._loadAttachments(state.editingJobId);
   },
 
-  /* ── Calc & payment badge ───────────────────────────── */
-
   updateCalc() {
     const company = state.companies.find(c => c.id === $('f-company')?.value);
     const job = {
@@ -2442,7 +2225,7 @@ const JobForm = {
       <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmtMoney(job.parts_purchase_price)}</span></div>
       <div class="calc-divider"></div>
       <div class="calc-row bold"><span class="cl">= Net Profit Pool</span><span class="cv">${fmtMoney(pool)}</span></div>
-      <div class="calc-row"><span class="cl">× ${techPct}% (моя доля)</span><span class="cv">${fmtMoney(payout)}</span></div>`;
+      <div class="calc-row"><span class="cl">${T('myShareCalc', {pct: techPct})}</span><span class="cv">${fmtMoney(payout)}</span></div>`;
 
     const totalEl = $('calc-total');
     totalEl.textContent = fmtMoney(payout);
@@ -2472,7 +2255,10 @@ const Settings = {
     const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
     $('s-tech-pct').value = techPct;
     $('s-apikey').value = state.apiKey || '';
-    $('settings-pct-label').textContent = `${techPct}%`;
+
+    // Update settings info box with current language and pct
+    const infoBox = $('settings-info-box');
+    if (infoBox) infoBox.innerHTML = T('settingsInfo', {pct: techPct});
 
     $('companies-list').innerHTML = state.companies.map(c => `
       <div class="card">
@@ -2495,24 +2281,21 @@ const Settings = {
     const pct = Math.min(100, Math.max(1, parseInt($('s-tech-pct').value) || 40)) / 100;
     const apiKey = $('s-apikey').value.trim();
 
-    if (btn) { btn.innerHTML = '<span class="spinner"></span> Сохраняю…'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<span class="spinner"></span> …'; btn.disabled = true; }
 
-    // Always save to local/session storage as fallback (works in incognito for session)
     if (apiKey) ApiKeyStore.save(apiKey);
     state.apiKey = apiKey;
 
     try {
-      // Try saving to Supabase (requires migration-v4.sql to be run)
       await Api.updateProfile(state.user.id, { tech_pct: pct, gemini_api_key: apiKey });
       state.profile.tech_pct = pct;
       state.profile.gemini_api_key = apiKey;
     } catch (err) {
-      // Column may not exist yet — save only tech_pct
       try {
         await Api.updateProfile(state.user.id, { tech_pct: pct });
         state.profile.tech_pct = pct;
       } catch (e2) {
-        if (btn) { btn.textContent = 'Сохранить'; btn.disabled = false; }
+        if (btn) { btn.textContent = T('save'); btn.disabled = false; }
         alert('Ошибка сохранения: ' + e2.message);
         return;
       }
@@ -2520,18 +2303,18 @@ const Settings = {
 
     if (btn) { btn.textContent = T('settingsSaved'); btn.disabled = false; }
     setTimeout(() => {
-      if (btn) btn.textContent = 'Сохранить';
+      if (btn) btn.textContent = T('save');
       UI.showScreen('list');
       List.render();
     }, 1000);
   },
 
   async addCompany() {
-    const name = prompt('Название компании:');
+    const name = prompt(_lang === 'en' ? 'Company name:' : 'Название компании:');
     if (!name) return;
-    const pct = prompt('Commission % (например 25):');
+    const pct = prompt(_lang === 'en' ? 'Commission % (e.g. 25):' : 'Commission % (например 25):');
     if (!pct) return;
-    const notes = prompt('Заметки (необязательно):') || '';
+    const notes = prompt(_lang === 'en' ? 'Notes (optional):' : 'Заметки (необязательно):') || '';
 
     try {
       const created = await Api.createCompany({
@@ -2544,7 +2327,7 @@ const Settings = {
       state.companies.push(created);
       this.render();
     } catch (err) {
-      alert('Ошибка: ' + err.message);
+      alert(T('inviteError') + err.message);
     }
   },
 
@@ -2552,11 +2335,11 @@ const Settings = {
     const company = state.companies.find(c => c.id === id);
     if (!company) return;
 
-    const name = prompt('Название:', company.name);
+    const name = prompt(_lang === 'en' ? 'Name:' : 'Название:', company.name);
     if (!name) return;
     const pct = prompt(`Commission % (${fmtPercent(company.commission_pct)}):`, (company.commission_pct * 100).toFixed(4));
     if (!pct) return;
-    const notes = prompt('Заметки:', company.notes || '') || '';
+    const notes = prompt(_lang === 'en' ? 'Notes:' : 'Заметки:', company.notes || '') || '';
 
     const updates = { name: name.trim(), commission_pct: parseFloat(pct) / 100, notes };
     await Api.updateCompany(id, updates);
@@ -2565,7 +2348,7 @@ const Settings = {
   },
 
   async deleteCompany(id) {
-    if (!confirm('Удалить поставщика?')) return;
+    if (!confirm(T('deleteSupplier'))) return;
     await Api.deleteCompany(id);
     state.companies = state.companies.filter(c => c.id !== id);
     this.render();
@@ -2598,13 +2381,11 @@ const Admin = {
   },
 
   async invite() {
-    const email = prompt('Email нового пользователя:');
+    const email = prompt(T('inviteEmail'));
     if (!email?.trim()) return;
-
-    const roleOptions = 'tech\nemployer\nadmin';
-    const role = prompt(`Роль (введи одну из):\n${roleOptions}`, 'tech');
+    const role = prompt(T('inviteRole'), T('inviteDefault'));
     if (!role || !['tech', 'employer', 'admin', 'pending'].includes(role.trim())) {
-      alert('Неверная роль. Допустимые: tech, employer, admin, pending');
+      alert(T('inviteInvalidRole'));
       return;
     }
 
@@ -2615,18 +2396,14 @@ const Admin = {
       });
       if (error) throw error;
 
-      // Copy invite link to clipboard
       const link = CONFIG.REDIRECT_URL;
       await navigator.clipboard?.writeText(link).catch(() => {});
-
-      alert(`✅ Пользователь ${email} будет иметь роль "${role}" при регистрации.\n\nСсылка для регистрации скопирована в буфер:\n${link}`);
+      alert(T('inviteSuccess', { email, role, link }));
       await this.load();
     } catch (err) {
-      alert('Ошибка: ' + err.message);
+      alert(T('inviteError') + err.message);
     }
   },
-
-  /* ── Private ────────────────────────────────────────── */
 
   _render() {
     $('admin-users').innerHTML = this.users.map(u => this._renderUserRow(u)).join('');
@@ -2634,7 +2411,6 @@ const Admin = {
 
   _renderUserRow(user) {
     const isSelf = user.id === state.user.id;
-    const hasAuthId = user.email && !user.email.includes('@') === false;
 
     const roleSelect = isSelf ? '' : `
       <select class="field-input field-select"
@@ -2651,7 +2427,7 @@ const Admin = {
 
     const isPending = !user.created_at || user.role === ROLES.PENDING;
     const statusNote = isPending
-      ? '<span style="font-size:11px;color:var(--yellow)">⏳ ожидает регистрации</span>'
+      ? `<span style="font-size:11px;color:var(--yellow)">${T('awaitingReg')}</span>`
       : `<span style="font-size:11px;color:var(--muted)">${(user.created_at || '').slice(0, 10)}</span>`;
 
     return `<div class="user-row" style="flex-direction:column;align-items:stretch;gap:8px">
@@ -2661,7 +2437,7 @@ const Admin = {
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap">
             <span class="badge badge-${user.role}">${user.role}</span>
             ${statusNote}
-            ${isSelf ? '<span style="font-size:11px;color:var(--muted)">(это ты)</span>' : ''}
+            ${isSelf ? `<span style="font-size:11px;color:var(--muted)">${T('itsYou')}</span>` : ''}
           </div>
         </div>
         ${roleSelect}
@@ -2673,11 +2449,11 @@ const Admin = {
   _renderEmployerSelect(techUser) {
     const employers = this.users.filter(u => u.role === ROLES.EMPLOYER || u.role === ROLES.ADMIN);
     return `<div style="margin-top:6px">
-      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Работодатель</label>
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">${T('employer')}</label>
       <select class="field-input field-select"
               style="font-size:12px;padding:6px 28px 6px 8px"
               onchange="Admin.setEmployer('${techUser.id}',this.value)">
-        <option value="">— без работодателя —</option>
+        <option value="">${T('noEmployer')}</option>
         ${employers.map(emp =>
           `<option value="${emp.id}" ${techUser.employer_id === emp.id ? 'selected' : ''}>${escapeHtml(emp.email)}</option>`
         ).join('')}
@@ -2687,28 +2463,28 @@ const Admin = {
 };
 
 /* ════════════════════════════════════════════════════════════
- * HISTORY — audit log timeline
+ * HISTORY
  * ════════════════════════════════════════════════════════════ */
 const History = {
   FIELD_LABELS: {
-    client_name:          'Клиент',
-    job_date:             'Дата',
-    job_id:               'Job ID',
-    company_id:           'Lead Source',
-    services_description: 'Описание работ',
-    services_price:       'Services Price',
-    parts_client_price:   'Parts (клиент)',
-    parts_purchase_price: 'Parts (закупка)',
-    notes:                'Notes',
-    payment_status:       'Статус оплаты',
-    paid_amount:          'Выплачено',
-    payment_notes:        'Заметка оплаты',
+    client_name:          { ru: 'Клиент',           en: 'Client' },
+    job_date:             { ru: 'Дата',             en: 'Date' },
+    job_id:               { ru: 'Job ID',           en: 'Job ID' },
+    company_id:           { ru: 'Lead Source',      en: 'Lead Source' },
+    services_description: { ru: 'Описание работ',   en: 'Services' },
+    services_price:       { ru: 'Services Price',   en: 'Services Price' },
+    parts_client_price:   { ru: 'Parts (клиент)',   en: 'Parts (client)' },
+    parts_purchase_price: { ru: 'Parts (закупка)',  en: 'Parts (purchase)' },
+    notes:                { ru: 'Notes',            en: 'Notes' },
+    payment_status:       { ru: 'Статус оплаты',    en: 'Payment Status' },
+    paid_amount:          { ru: 'Выплачено',        en: 'Paid Out' },
+    payment_notes:        { ru: 'Заметка оплаты',   en: 'Payment Note' },
   },
 
   ACTION_LABELS: {
-    created:         'Создан',
-    updated:         'Изменён',
-    payment_updated: 'Оплата',
+    created:         { ru: 'Создан',   en: 'Created' },
+    updated:         { ru: 'Изменён',  en: 'Updated' },
+    payment_updated: { ru: 'Оплата',   en: 'Payment' },
   },
 
   _currentJob: null,
@@ -2725,26 +2501,19 @@ const History = {
     }
   },
 
-  /* ── Private ────────────────────────────────────────── */
-
   _renderJobInfo(job) {
     const company = state.companies.find(c => c.id === job.company_id);
     $('history-job-info').innerHTML = `
       <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${escapeHtml(job.job_date) || '—'} · #${escapeHtml(job.job_id) || '—'}</div>
-      <div style="font-size:17px;font-weight:700">${escapeHtml(job.client_name) || 'Без имени'}</div>
+      <div style="font-size:17px;font-weight:700">${escapeHtml(job.client_name) || T('noName')}</div>
       <div style="font-size:12px;color:var(--muted);margin-top:2px">${company ? escapeHtml(company.name) : '—'}</div>`;
   },
 
   _renderEntries(entries, currentJob) {
     if (!entries.length) {
-      $('history-list').innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">История изменений пуста</div>`;
+      $('history-list').innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">${T('historyEmpty')}</div>`;
       return;
     }
-    // entries sorted DESC (newest first)
-    // entries[i].snapshot = state BEFORE entries[i] change
-    // To show what changed IN entries[i]:
-    //   old = entries[i].snapshot
-    //   new = entries[i-1].snapshot  (for i>0) or currentJob (for i=0, newest)
     $('history-list').innerHTML = entries.map((entry, idx) => {
       const newerState = idx === 0 ? currentJob : entries[idx - 1].snapshot;
       return this._renderEntry(entry, newerState);
@@ -2752,25 +2521,28 @@ const History = {
   },
 
   _renderEntry(entry, newerState) {
-    const who  = entry.changer?.full_name || entry.changer?.email || 'Неизвестно';
-    const when = new Date(entry.changed_at).toLocaleString('ru-RU', {
+    const who  = entry.changer?.full_name || entry.changer?.email || 'Unknown';
+    const when = new Date(entry.changed_at).toLocaleString(_lang === 'en' ? 'en-CA' : 'ru-RU', {
       day: '2-digit', month: '2-digit', year: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
 
+    const actionLabel = this.ACTION_LABELS[entry.action];
+    const actionText = actionLabel ? (actionLabel[_lang] || actionLabel.en) : entry.action;
+
     let body;
     if (entry.action === 'created') {
-      body = '<div style="font-size:12px;color:var(--muted)">Запись создана</div>';
+      body = `<div style="font-size:12px;color:var(--muted)">${T('created')}</div>`;
     } else {
       const diffs = newerState ? this._computeDiff(entry.snapshot, newerState) : '';
       body = diffs
         ? `<div class="history-diff">${diffs}</div>`
-        : '<div style="font-size:12px;color:var(--muted)">Нет изменений</div>';
+        : `<div style="font-size:12px;color:var(--muted)">${T('noChanges')}</div>`;
     }
 
     return `<div class="history-item">
       <div class="history-meta">
-        <span class="history-action ${entry.action}">${this.ACTION_LABELS[entry.action] || entry.action}</span>
+        <span class="history-action ${entry.action}">${actionText}</span>
         <span class="history-who">${escapeHtml(who)}</span>
         <span class="history-when">${escapeHtml(when)}</span>
       </div>
@@ -2781,7 +2553,8 @@ const History = {
   _computeDiff(oldSnap, newSnap) {
     if (!oldSnap || !newSnap) return '';
     const rows = [];
-    for (const [field, label] of Object.entries(this.FIELD_LABELS)) {
+    for (const [field, labelObj] of Object.entries(this.FIELD_LABELS)) {
+      const label = labelObj[_lang] || labelObj.en;
       const oldVal = this._formatValue(field, oldSnap[field]);
       const newVal = this._formatValue(field, newSnap[field]);
       if (oldVal !== newVal) {
@@ -2810,10 +2583,9 @@ const History = {
 };
 
 /* ════════════════════════════════════════════════════════════
- * APP — top-level controller
+ * APP
  * ════════════════════════════════════════════════════════════ */
 const App = {
-  /** Switch to a screen and load its data */
   showScreen(name) {
     UI.showScreen(name);
     if (name === 'list')     List.render();
@@ -2821,14 +2593,10 @@ const App = {
     if (name === 'admin')    Admin.load();
   },
 
-  /** Entry point — called on auth state change */
   async init(session) {
     $('loading').style.display = 'none';
 
-    if (!session) {
-      UI.showScreen('auth');
-      return;
-    }
+    if (!session) { UI.showScreen('auth'); return; }
 
     state.user = session.user;
 
@@ -2842,9 +2610,7 @@ const App = {
 
     state.profile = profile;
     state.profile.tech_pct = profile.tech_pct || CONFIG.DEFAULT_TECH_PCT;
-    // Load API key: Supabase (best) → localStorage → sessionStorage
     state.apiKey = profile.gemini_api_key || ApiKeyStore.load() || '';
-    // Sync back to local storage if loaded from Supabase
     if (profile.gemini_api_key) ApiKeyStore.save(profile.gemini_api_key);
 
     if (profile.role === ROLES.PENDING)   { UI.showScreen('pending');   return; }
@@ -2857,7 +2623,6 @@ const App = {
     applyI18n();
   },
 
-  /** Load user's companies and jobs in parallel */
   async loadUserData() {
     const [companies, jobs] = await Promise.all([
       Api.fetchCompanies(state.user.id),
@@ -2885,8 +2650,6 @@ const App = {
     }
   },
 
-  /* ── Private ────────────────────────────────────────── */
-
   async _loadProfileWithRetry() {
     for (let i = 0; i < CONFIG.PROFILE_LOAD_RETRIES; i++) {
       const profile = await Api.fetchProfile(state.user.id);
@@ -2898,23 +2661,18 @@ const App = {
 };
 
 /* ════════════════════════════════════════════════════════════
- * EVENT LISTENERS — clipboard paste & drag-drop
+ * EVENT LISTENERS
  * ════════════════════════════════════════════════════════════ */
-
-/** Cmd+V / Ctrl+V on form screen → upload to HCP */
 document.addEventListener('paste', async (e) => {
   const isFormScreen = document.querySelector('.screen.active')?.id === 'screen-form';
   if (!isFormScreen) return;
-
   const imageItem = Array.from(e.clipboardData?.items || []).find(i => i.type.startsWith('image/'));
   if (!imageItem) return;
-
   e.preventDefault();
   const file = imageItem.getAsFile();
   if (file) await JobForm.pasteFiles([file], 'hcp');
 });
 
-/** Drag & drop into upload zones */
 [['hcp-zone', 'hcp'], ['inv-zone', 'invoice']].forEach(([zoneId, mode]) => {
   const zone = $(zoneId);
   if (!zone) return;
