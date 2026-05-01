@@ -746,10 +746,26 @@ hr { border: none; border-top: 1px solid var(--border); }
           <label class="field-label" data-i18n="leadSource">Lead Source</label>
           <select id="f-company" class="field-input field-select" onchange="JobForm.updateCalc()"></select>
         </div>
+        <!-- 2nd Tech toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f7f4;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer" onclick="JobForm.toggleSecondTech()">
+          <div>
+            <div style="font-size:13px;font-weight:600" data-i18n="secondTech">2-й техник (ассист)</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" data-i18n="secondTechHint">Считается только моя ставка</div>
+          </div>
+          <div id="second-tech-toggle" style="width:44px;height:26px;border-radius:13px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0">
+            <div id="second-tech-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+          </div>
+        </div>
+        <div id="second-tech-fee-wrap" style="display:none">
+          <label class="field-label" data-i18n="secondTechFee">Моя ставка ($)</label>
+          <input id="f-second-tech-fee" type="number" step="0.01" class="field-input" placeholder="0.00" oninput="JobForm.updateCalc()">
+        </div>
+        <div id="regular-fields-wrap">
         <div>
           <label class="field-label" data-i18n="servicesDesc">Services (описание работ)</label>
           <textarea id="f-services-desc" class="field-input field-textarea" placeholder="Labour Diagnostic &amp; Repair…"></textarea>
         </div>
+        <div id="regular-price-wrap">
         <div class="grid-2">
           <div>
             <label class="field-label" data-i18n="servicesPrice">Services Price ($)</label>
@@ -764,6 +780,7 @@ hr { border: none; border-top: 1px solid var(--border); }
           <label class="field-label yellow"><span data-i18n="partsPurchase">Parts Purchase Price ($)</span> <span style="font-weight:400;color:var(--muted)" data-i18n="partsPurchaseSub">— закупочная стоимость</span></label>
           <input id="f-parts-buy" type="number" step="0.01" class="field-input yellow-input" placeholder="0.00" oninput="JobForm.updateCalc()">
         </div>
+        </div><!-- /regular-price-wrap -->
         <div>
           <label class="field-label" data-i18n="notes">Notes</label>
           <textarea id="f-notes" class="field-input field-textarea" placeholder="—"></textarea>
@@ -1067,6 +1084,10 @@ var TRANSLATIONS = {
     reviewPartsBuy:      'Parts Purchase Price',
     reviewSupplier:      'Поставщик',
     deleteSupplier:      'Удалить поставщика?',
+    secondTech:          '2-й техник (ассист)',
+    secondTechHint:      'Считается только моя ставка, без деления общего дохода',
+    secondTechFee:       'Моя ставка ($)',
+    secondTechBadge:     '2T',
   },
   en: {
     appTitle:        'TRC Income Tracker',
@@ -1205,6 +1226,10 @@ var TRANSLATIONS = {
     reviewPartsBuy:      'Parts Purchase Price',
     reviewSupplier:      'Supplier',
     deleteSupplier:      'Delete supplier?',
+    secondTech:          '2nd Tech (assist)',
+    secondTechHint:      'Only my fee is counted, no revenue sharing',
+    secondTechFee:       'My fee ($)',
+    secondTechBadge:     '2T',
   },
 };
 
@@ -1357,16 +1382,35 @@ function fmtMonthKey(key) {
  * BUSINESS LOGIC
  * ════════════════════════════════════════════════════════════ */
 function calculatePayout(job, company) {
-  if (!company) return { subtotal: 0, commission: 0, pool: 0, payout: 0 };
+  const techPct = state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT;
+
+  // 2nd tech mode: only my fee counts, no commission, no parts
+  if (job.is_second_tech) {
+    const fee = Number(job.second_tech_fee) || 0;
+    return { subtotal: fee, commission: 0, pool: fee, payout: fee * techPct, isSecondTech: true };
+  }
+
+  // Custom commission (no company record)
+  if (!company) {
+    if (job.company_id === CUSTOM_COMPANY_ID && job.custom_commission_pct != null) {
+      const services    = Number(job.services_price)       || 0;
+      const partsClient = Number(job.parts_client_price)   || 0;
+      const partsBuy    = Number(job.parts_purchase_price) || 0;
+      const subtotal    = services + partsClient;
+      const commission  = subtotal * (Number(job.custom_commission_pct) / 100);
+      const pool        = subtotal - commission - partsBuy;
+      return { subtotal, commission, pool, payout: pool * techPct };
+    }
+    return { subtotal: 0, commission: 0, pool: 0, payout: 0 };
+  }
+
   const services    = Number(job.services_price)       || 0;
   const partsClient = Number(job.parts_client_price)   || 0;
   const partsBuy    = Number(job.parts_purchase_price) || 0;
-  const subtotal   = services + partsClient;
-  const commission = subtotal * company.commission_pct;
-  const pool       = subtotal - commission - partsBuy;
-  const techPct    = state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT;
-  const payout     = pool * techPct;
-  return { subtotal, commission, pool, payout };
+  const subtotal    = services + partsClient;
+  const commission  = subtotal * company.commission_pct;
+  const pool        = subtotal - commission - partsBuy;
+  return { subtotal, commission, pool, payout: pool * techPct };
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1928,6 +1972,7 @@ const List = {
       <div class="mini-card-foot">
         <span class="payment-badge ${ps}">${PAYMENT_LABELS[ps]}${partialNote}</span>
         <span class="employer-badge ${job.employer_status || 'pending'}">${EMPLOYER_STATUS_LABELS[job.employer_status || 'pending']}</span>
+        ${job.is_second_tech ? `<span style="background:#f3e8ff;color:#6b21a8;font-size:11px;font-weight:700;padding:2px 7px;border-radius:100px">2T</span>` : ''}
         <div class="mini-card-actions">
           <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();History.open(state.jobMap['${job.id}'])" title="History">🕐</button>
           <button class="delete-btn" style="font-size:13px;padding:4px" onclick="event.stopPropagation();App.deleteJob('${job.id}')" title="Delete">🗑</button>
@@ -2027,6 +2072,20 @@ const JobForm = {
     UI.showScreen('form');
   },
 
+  toggleSecondTech(force) {
+    const isOn = force !== undefined ? force : !$('second-tech-toggle').classList.contains('on');
+    $('second-tech-toggle').classList.toggle('on', isOn);
+    $('second-tech-toggle').style.background = isOn ? 'var(--green)' : 'var(--border)';
+    $('second-tech-knob').style.transform = isOn ? 'translateX(18px)' : 'translateX(0)';
+    $('second-tech-fee-wrap').style.display = isOn ? 'block' : 'none';
+    $('regular-price-wrap').style.display = isOn ? 'none' : 'block';
+    this.updateCalc();
+  },
+
+  _isSecondTech() {
+    return $('second-tech-toggle').classList.contains('on');
+  },
+
   _populateCompanySelect() {
     $('f-company').innerHTML = `<option value="">${T('selectCompany')}</option>` +
       state.companies.map(c =>
@@ -2049,36 +2108,46 @@ const JobForm = {
     set('f-paid-amount',     job.paid_amount);
     set('f-payment-notes',   job.payment_notes);
     set('f-employer-status', job.employer_status ?? 'pending');
+    // Second tech
+    this.toggleSecondTech(!!job.is_second_tech);
+    if (job.is_second_tech) set('f-second-tech-fee', job.second_tech_fee ?? '');
     if (job.id) this._loadAttachments(job.id);
   },
 
   _reset() {
     const set = (id, value) => { const el = $(id); if (el) el.value = value; };
     ['f-jobId','f-client','f-services-desc','f-services-price','f-parts-client',
-     'f-parts-buy','f-notes','f-paid-amount','f-payment-notes'].forEach(id => set(id, ''));
+     'f-parts-buy','f-notes','f-paid-amount','f-payment-notes','f-second-tech-fee'].forEach(id => set(id, ''));
     set('f-date',           today());
     set('f-company',        '');
     set('f-payment-status', PAYMENT_STATUS.UNPAID);
+    this.toggleSecondTech(false);
     set('f-employer-status', EMPLOYER_STATUS.PENDING);
   },
 
   _collectInputs() {
+    const isSecondTech = this._isSecondTech();
+    const companyId = $('f-company').value;
+    const customPct = companyId === CUSTOM_COMPANY_ID ? (parseFloat($('f-custom-pct')?.value) || null) : null;
     return {
-      user_id:              state.user.id,
-      job_id:               $('f-jobId').value.trim() || null,
-      job_date:             $('f-date').value || null,
-      client_name:          $('f-client').value.trim() || null,
-      company_id:           $('f-company').value,
-      services_description: $('f-services-desc').value.trim() || null,
-      services_price:       parseFloat($('f-services-price').value) || 0,
-      parts_client_price:   parseFloat($('f-parts-client').value)   || 0,
-      parts_purchase_price: parseFloat($('f-parts-buy').value)      || 0,
-      notes:                $('f-notes').value.trim() || null,
-      payment_status:       $('f-payment-status').value,
-      paid_amount:          parseFloat($('f-paid-amount').value) || 0,
-      payment_notes:        $('f-payment-notes').value.trim() || null,
-      paid_by:              state.user.id,
-      employer_status:      $('f-employer-status').value || 'pending',
+      user_id:               state.user.id,
+      job_id:                $('f-jobId').value.trim() || null,
+      job_date:              $('f-date').value || null,
+      client_name:           $('f-client').value.trim() || null,
+      company_id:            companyId || null,
+      services_description:  $('f-services-desc').value.trim() || null,
+      services_price:        isSecondTech ? 0 : (parseFloat($('f-services-price').value) || 0),
+      parts_client_price:    isSecondTech ? 0 : (parseFloat($('f-parts-client').value)   || 0),
+      parts_purchase_price:  isSecondTech ? 0 : (parseFloat($('f-parts-buy').value)      || 0),
+      notes:                 $('f-notes').value.trim() || null,
+      payment_status:        $('f-payment-status').value,
+      paid_amount:           parseFloat($('f-paid-amount').value) || 0,
+      payment_notes:         $('f-payment-notes').value.trim() || null,
+      paid_by:               state.user.id,
+      employer_status:       $('f-employer-status').value || 'pending',
+      is_second_tech:        isSecondTech,
+      second_tech_fee:       isSecondTech ? (parseFloat($('f-second-tech-fee').value) || 0) : null,
+      custom_commission_pct: customPct,
     };
   },
 
@@ -2333,23 +2402,50 @@ const JobForm = {
   },
 
   updateCalc() {
-    const company = state.companies.find(c => c.id === $('f-company')?.value);
-    const job = {
-      services_price:       parseFloat($('f-services-price')?.value) || 0,
-      parts_client_price:   parseFloat($('f-parts-client')?.value)   || 0,
-      parts_purchase_price: parseFloat($('f-parts-buy')?.value)      || 0,
-    };
-    const { subtotal, commission, pool, payout } = calculatePayout(job, company);
-    const pct     = company ? fmtPercent(company.commission_pct) : '—%';
     const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    const isSecondTech = this._isSecondTech();
+
+    if (isSecondTech) {
+      const fee = parseFloat($('f-second-tech-fee')?.value) || 0;
+      const payout = fee * (techPct / 100);
+      $('calc-rows').innerHTML = `
+        <div class="calc-row"><span class="cl">My fee (2nd Tech)</span><span class="cv">${fmtMoney(fee)}</span></div>
+        <div class="calc-divider"></div>
+        <div class="calc-row bold"><span class="cl">= My pool</span><span class="cv">${fmtMoney(fee)}</span></div>
+        <div class="calc-row"><span class="cl">${T('myShareCalc', {pct: techPct})}</span><span class="cv">${fmtMoney(payout)}</span></div>`;
+      const totalEl = $('calc-total');
+      totalEl.textContent = fmtMoney(payout);
+      totalEl.className = 'calc-total-val ' + (payout >= 0 ? 'green' : 'red');
+      return;
+    }
+
+    const companyId = $('f-company')?.value;
+    let company = state.companies.find(c => c.id === companyId);
+    let pctLabel = '—%';
+    const virtualJob = {
+      services_price:        parseFloat($('f-services-price')?.value) || 0,
+      parts_client_price:    parseFloat($('f-parts-client')?.value)   || 0,
+      parts_purchase_price:  parseFloat($('f-parts-buy')?.value)      || 0,
+      company_id:            companyId,
+      custom_commission_pct: parseFloat($('f-custom-pct')?.value) || null,
+    };
+
+    if (!company && companyId === CUSTOM_COMPANY_ID && virtualJob.custom_commission_pct != null) {
+      pctLabel = virtualJob.custom_commission_pct.toFixed(2) + '%';
+      company = { commission_pct: virtualJob.custom_commission_pct / 100 };
+    } else if (company) {
+      pctLabel = fmtPercent(company.commission_pct);
+    }
+
+    const { subtotal, commission, pool, payout } = calculatePayout(virtualJob, company);
 
     $('calc-rows').innerHTML = `
-      <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmtMoney(job.services_price)}</span></div>
-      <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmtMoney(job.parts_client_price)}</span></div>
+      <div class="calc-row"><span class="cl">Services Price</span><span class="cv">${fmtMoney(virtualJob.services_price)}</span></div>
+      <div class="calc-row"><span class="cl">+ Parts Price for Client</span><span class="cv">${fmtMoney(virtualJob.parts_client_price)}</span></div>
       <div class="calc-divider"></div>
       <div class="calc-row bold"><span class="cl">= Subtotal</span><span class="cv">${fmtMoney(subtotal)}</span></div>
-      <div class="calc-row neg"><span class="cl">− Lead Commission (${pct})</span><span class="cv">${fmtMoney(commission)}</span></div>
-      <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmtMoney(job.parts_purchase_price)}</span></div>
+      <div class="calc-row neg"><span class="cl">− Lead Commission (${pctLabel})</span><span class="cv">${fmtMoney(commission)}</span></div>
+      <div class="calc-row neg"><span class="cl">− Parts Purchase Price</span><span class="cv">${fmtMoney(virtualJob.parts_purchase_price)}</span></div>
       <div class="calc-divider"></div>
       <div class="calc-row bold"><span class="cl">= Net Profit Pool</span><span class="cv">${fmtMoney(pool)}</span></div>
       <div class="calc-row"><span class="cl">${T('myShareCalc', {pct: techPct})}</span><span class="cv">${fmtMoney(payout)}</span></div>`;
