@@ -2175,7 +2175,9 @@ const JobForm = {
   _collectInputs() {
     const isSecondTech = this._isSecondTech();
     const companyId = $('f-company').value;
-    const customPct = companyId === CUSTOM_COMPANY_ID ? (parseFloat($('f-custom-pct')?.value) || null) : null;
+    const isCustomSelected = companyId === CUSTOM_COMPANY_ID;
+    const rawCustomPct = $('f-custom-pct')?.value?.trim();
+    const customPct = isCustomSelected && rawCustomPct !== '' ? parseFloat(rawCustomPct) : null;
     const defaultPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
     const techPctInput = parseFloat($('f-tech-pct')?.value) || defaultPct;
     // Only store override if different from profile default
@@ -2205,12 +2207,8 @@ const JobForm = {
 
   async save() {
     const row = this._collectInputs();
-    const isCustom = row.custom_commission_pct != null;
+    const isCustom = row.custom_commission_pct != null || $('f-company').value === CUSTOM_COMPANY_ID;
     if (!row.company_id && !row.is_second_tech && !isCustom) { UI.showNotice('error', T('selectSupplier')); return; }
-    if (isCustom && row.custom_commission_pct == null) {
-      UI.showNotice('error', _lang === 'ru' ? 'Укажи Commission % для Custom' : 'Enter Commission % for Custom');
-      return;
-    }
 
     const btn = $('save-btn');
     const originalText = btn?.textContent || T('save');
