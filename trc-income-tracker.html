@@ -744,7 +744,15 @@ hr { border: none; border-top: 1px solid var(--border); }
         </div>
         <div>
           <label class="field-label" data-i18n="leadSource">Lead Source</label>
-          <select id="f-company" class="field-input field-select" onchange="JobForm.updateCalc()"></select>
+          <select id="f-company" class="field-input field-select" onchange="JobForm.onCompanyChange()"></select>
+        </div>
+        <div id="custom-pct-wrap" style="display:none">
+          <label class="field-label" data-i18n="customCommPct">Commission % (Custom)</label>
+          <input id="f-custom-pct" type="number" step="0.01" min="0" max="100" class="field-input" placeholder="25.00" oninput="JobForm.updateCalc()">
+        </div>
+        <div>
+          <label class="field-label" data-i18n="techPctLabel">My share (%)</label>
+          <input id="f-tech-pct" type="number" step="1" min="1" max="100" class="field-input" placeholder="40" oninput="JobForm.updateCalc()" style="width:100px">
         </div>
         <!-- 2nd Tech toggle -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f7f4;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer" onclick="JobForm.toggleSecondTech()">
@@ -1084,6 +1092,9 @@ var TRANSLATIONS = {
     reviewPartsBuy:      'Parts Purchase Price',
     reviewSupplier:      'Поставщик',
     deleteSupplier:      'Удалить поставщика?',
+    customLeadSource:    '✏️ Custom (свой %)',
+    customCommPct:       'Commission % (Custom)',
+    techPctLabel:        'Моя доля (%)',
     secondTech:          '2-й техник (ассист)',
     secondTechHint:      'Считается только моя ставка, без деления общего дохода',
     secondTechFee:       'Моя ставка ($)',
@@ -1226,6 +1237,9 @@ var TRANSLATIONS = {
     reviewPartsBuy:      'Parts Purchase Price',
     reviewSupplier:      'Supplier',
     deleteSupplier:      'Delete supplier?',
+    customLeadSource:    '✏️ Custom (%)',
+    customCommPct:       'Commission % (Custom)',
+    techPctLabel:        'My share (%)',
     secondTech:          '2nd Tech (assist)',
     secondTechHint:      'Only my fee is counted, no revenue sharing',
     secondTechFee:       'My fee ($)',
@@ -1384,7 +1398,10 @@ function fmtMonthKey(key) {
  * BUSINESS LOGIC
  * ════════════════════════════════════════════════════════════ */
 function calculatePayout(job, company) {
-  const techPct = state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT;
+  // Per-job tech pct override (stored as %, e.g. 40), fallback to profile default (ratio, e.g. 0.4)
+  const techPct = job.tech_pct_override != null
+    ? Number(job.tech_pct_override) / 100
+    : (state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT);
 
   // 2nd tech mode: only my fee counts, but commission still applies
   if (job.is_second_tech) {
@@ -1395,9 +1412,9 @@ function calculatePayout(job, company) {
     return { subtotal: fee, commission, pool, payout: pool * techPct, isSecondTech: true };
   }
 
-  // Custom commission (no company record)
+  // Custom commission (no company record, custom % set)
   if (!company) {
-    if (job.company_id === CUSTOM_COMPANY_ID && job.custom_commission_pct != null) {
+    if (job.custom_commission_pct != null) {
       const services    = Number(job.services_price)       || 0;
       const partsClient = Number(job.parts_client_price)   || 0;
       const partsBuy    = Number(job.parts_purchase_price) || 0;
@@ -2077,6 +2094,12 @@ const JobForm = {
     UI.showScreen('form');
   },
 
+  onCompanyChange() {
+    const isCustom = $('f-company').value === CUSTOM_COMPANY_ID;
+    $('custom-pct-wrap').style.display = isCustom ? 'block' : 'none';
+    this.updateCalc();
+  },
+
   toggleSecondTech(force) {
     const isOn = force !== undefined ? force : !$('second-tech-toggle').classList.contains('on');
     $('second-tech-toggle').classList.toggle('on', isOn);
@@ -2114,6 +2137,20 @@ const JobForm = {
     set('f-paid-amount',     job.paid_amount);
     set('f-payment-notes',   job.payment_notes);
     set('f-employer-status', job.employer_status ?? 'pending');
+    // Tech pct override
+    const defaultPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    set('f-tech-pct', job.tech_pct_override != null ? job.tech_pct_override : defaultPct);
+    // Custom commission or regular company
+    if (job.custom_commission_pct != null) {
+      $('f-company').value = CUSTOM_COMPANY_ID;
+      $('custom-pct-wrap').style.display = 'block';
+      set('f-custom-pct', job.custom_commission_pct);
+    } else if (job.company_id) {
+      $('f-company').value = job.company_id;
+      $('custom-pct-wrap').style.display = 'none';
+    } else {
+      $('custom-pct-wrap').style.display = 'none';
+    }
     // Second tech
     this.toggleSecondTech(!!job.is_second_tech);
     if (job.is_second_tech) set('f-second-tech-fee', job.second_tech_fee ?? '');
@@ -2123,24 +2160,32 @@ const JobForm = {
   _reset() {
     const set = (id, value) => { const el = $(id); if (el) el.value = value; };
     ['f-jobId','f-client','f-services-desc','f-services-price','f-parts-client',
-     'f-parts-buy','f-notes','f-paid-amount','f-payment-notes','f-second-tech-fee'].forEach(id => set(id, ''));
+     'f-parts-buy','f-notes','f-paid-amount','f-payment-notes','f-second-tech-fee','f-custom-pct'].forEach(id => set(id, ''));
     set('f-date',           today());
     set('f-company',        '');
     set('f-payment-status', PAYMENT_STATUS.UNPAID);
-    this.toggleSecondTech(false);
     set('f-employer-status', EMPLOYER_STATUS.PENDING);
+    // Set default tech pct from profile
+    const defaultPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    set('f-tech-pct', defaultPct);
+    $('custom-pct-wrap').style.display = 'none';
+    this.toggleSecondTech(false);
   },
 
   _collectInputs() {
     const isSecondTech = this._isSecondTech();
     const companyId = $('f-company').value;
     const customPct = companyId === CUSTOM_COMPANY_ID ? (parseFloat($('f-custom-pct')?.value) || null) : null;
+    const defaultPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    const techPctInput = parseFloat($('f-tech-pct')?.value) || defaultPct;
+    // Only store override if different from profile default
+    const techPctOverride = techPctInput !== defaultPct ? techPctInput : null;
     return {
       user_id:               state.user.id,
       job_id:                $('f-jobId').value.trim() || null,
       job_date:              $('f-date').value || null,
       client_name:           $('f-client').value.trim() || null,
-      company_id:            companyId || null,
+      company_id:            (companyId && companyId !== CUSTOM_COMPANY_ID) ? companyId : null,
       services_description:  $('f-services-desc').value.trim() || null,
       services_price:        isSecondTech ? 0 : (parseFloat($('f-services-price').value) || 0),
       parts_client_price:    isSecondTech ? 0 : (parseFloat($('f-parts-client').value)   || 0),
@@ -2154,12 +2199,18 @@ const JobForm = {
       is_second_tech:        isSecondTech,
       second_tech_fee:       isSecondTech ? (parseFloat($('f-second-tech-fee').value) || 0) : null,
       custom_commission_pct: customPct,
+      tech_pct_override:     techPctOverride,
     };
   },
 
   async save() {
     const row = this._collectInputs();
-    if (!row.company_id && !row.is_second_tech) { UI.showNotice('error', T('selectSupplier')); return; }
+    const isCustom = row.custom_commission_pct != null;
+    if (!row.company_id && !row.is_second_tech && !isCustom) { UI.showNotice('error', T('selectSupplier')); return; }
+    if (isCustom && row.custom_commission_pct == null) {
+      UI.showNotice('error', _lang === 'ru' ? 'Укажи Commission % для Custom' : 'Enter Commission % for Custom');
+      return;
+    }
 
     const btn = $('save-btn');
     const originalText = btn?.textContent || T('save');
@@ -2409,7 +2460,8 @@ const JobForm = {
   },
 
   updateCalc() {
-    const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    const defaultPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+    const techPct = parseFloat($('f-tech-pct')?.value) || defaultPct;
     const isSecondTech = this._isSecondTech();
 
     if (isSecondTech) {
@@ -2443,7 +2495,7 @@ const JobForm = {
       custom_commission_pct: parseFloat($('f-custom-pct')?.value) || null,
     };
 
-    if (!company && companyId === CUSTOM_COMPANY_ID && virtualJob.custom_commission_pct != null) {
+    if (!company && virtualJob.custom_commission_pct != null) {
       pctLabel = virtualJob.custom_commission_pct.toFixed(2) + '%';
       company = { commission_pct: virtualJob.custom_commission_pct / 100 };
     } else if (company) {
