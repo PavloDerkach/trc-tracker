@@ -980,7 +980,7 @@ var TRANSLATIONS = {
     suspendedTitle:  'Доступ заблокирован',
     suspendedSub:    'Свяжись с администратором.',
     signOut:         'Выйти',
-    myPayout:        'Моя выплата',
+    myPayout:        'Итого заработано',
     subtotal:        'Subtotal',
     commissions:     '− Комиссии',
     partsBuy:        '− Закупка з/ч',
@@ -1103,7 +1103,7 @@ var TRANSLATIONS = {
   en: {
     appTitle:        'TRC Income Tracker',
     appSubtitle:     'TRC — My Income',
-    jobList:         'Job Journal',
+    jobList:         'Jobs Journal',
     signIn:          'Sign In',
     signUp:          'Sign Up',
     email:           'Email',
@@ -1125,7 +1125,7 @@ var TRANSLATIONS = {
     suspendedTitle:  'Access Blocked',
     suspendedSub:    'Please contact the administrator.',
     signOut:         'Sign Out',
-    myPayout:        'My Payout',
+    myPayout:        'Total Earnings',
     subtotal:        'Subtotal',
     commissions:     '− Commissions',
     partsBuy:        '− Parts Purchase',
@@ -2485,12 +2485,13 @@ const JobForm = {
     const companyId = $('f-company')?.value;
     let company = state.companies.find(c => c.id === companyId);
     let pctLabel = '—%';
+    const rawCustom = $('f-custom-pct')?.value?.trim();
     const virtualJob = {
       services_price:        parseFloat($('f-services-price')?.value) || 0,
       parts_client_price:    parseFloat($('f-parts-client')?.value)   || 0,
       parts_purchase_price:  parseFloat($('f-parts-buy')?.value)      || 0,
       company_id:            companyId,
-      custom_commission_pct: parseFloat($('f-custom-pct')?.value) || null,
+      custom_commission_pct: (companyId === CUSTOM_COMPANY_ID && rawCustom !== '') ? parseFloat(rawCustom) : null,
     };
 
     if (!company && virtualJob.custom_commission_pct != null) {
