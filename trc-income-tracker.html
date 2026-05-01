@@ -615,6 +615,9 @@ hr { border: none; border-top: 1px solid var(--border); }
       <div class="auth-toggle" id="auth-toggle">
         <span data-i18n="noAccount">Нет аккаунта?</span> <span onclick="Auth.toggleMode()" data-i18n="signUpLink">Зарегистрироваться</span>
       </div>
+      <div style="text-align:center">
+        <span onclick="Auth.forgotPassword()" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline">Forgot password?</span>
+      </div>
     </div>
   </div>
 </div>
@@ -638,6 +641,29 @@ hr { border: none; border-top: 1px solid var(--border); }
 </div>
 
 <!-- JOB LIST -->
+<div id="screen-recovery" class="screen">
+  <div class="center-screen">
+    <div class="auth-logo">🔑</div>
+    <div class="auth-title">New Password</div>
+    <div class="auth-sub" id="recovery-sub">Enter your new password</div>
+    <div class="auth-form">
+      <div>
+        <label class="field-label">New Password</label>
+        <input id="recovery-password" type="password" class="field-input" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div>
+        <label class="field-label">Confirm Password</label>
+        <input id="recovery-password2" type="password" class="field-input" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button id="recovery-btn" class="btn btn-primary btn-amber" onclick="Auth.updatePassword()">Set New Password</button>
+      <div id="recovery-error" class="notice error" style="display:none">
+        <div class="notice-icon">⚠️</div>
+        <div class="notice-body"><div id="recovery-error-text"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="screen-list" class="screen">
   <div class="header">
     <div>
@@ -1702,6 +1728,70 @@ const Auth = {
     }
   },
 
+  async updatePassword() {
+    const p1 = $('recovery-password').value;
+    const p2 = $('recovery-password2').value;
+    if (!p1) { this._showRecoveryError('Enter a new password'); return; }
+    if (p1.length < 6) { this._showRecoveryError('Password must be at least 6 characters'); return; }
+    if (p1 !== p2) { this._showRecoveryError('Passwords do not match'); return; }
+
+    UI.setButton('recovery-btn', '<span class="spinner"></span> Saving…', true);
+    try {
+      // Get current session token
+      const sessionRaw = localStorage.getItem('sb-kyiixiwlsffpjzrojoaq-auth-token') || sessionStorage.getItem('sb-kyiixiwlsffpjzrojoaq-auth-token');
+      const session = sessionRaw ? JSON.parse(sessionRaw) : null;
+      if (!session?.access_token) throw new Error('No session — request reset link again');
+
+      const res = await fetch('https://kyiixiwlsffpjzrojoaq.supabase.co/auth/v1/user', {
+        method: 'PUT',
+        headers: {
+          'apikey': 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6',
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: p1 }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update password');
+      }
+      UI.setButton('recovery-btn', '✅ Password updated!', false);
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      UI.setButton('recovery-btn', 'Set New Password', false);
+      this._showRecoveryError(err.message || String(err));
+    }
+  },
+
+  _showRecoveryError(msg) {
+    $('recovery-error').style.display = 'flex';
+    $('recovery-error-text').textContent = msg;
+  },
+
+  async forgotPassword() {
+    const email = $('auth-email').value.trim();
+    if (!email) {
+      this._showError('Enter your email first');
+      return;
+    }
+    try {
+      const res = await fetch('https://kyiixiwlsffpjzrojoaq.supabase.co/auth/v1/recover', {
+        method: 'POST',
+        headers: {
+          'apikey': 'sb_publishable_34tyPrm5pkJRrLmr0Coxvw_F-hJJ2V6',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, redirect_to: 'https://pavloderkach.github.io/trc-tracker/trc-income-tracker.html' }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+      $('auth-error').style.display = 'flex';
+      $('auth-error').className = 'notice success';
+      $('auth-error-text').textContent = '✅ Check your email for a reset link';
+    } catch (err) {
+      this._showError('Failed to send reset email');
+    }
+  },
+
   async signOut() { await sb.auth.signOut(); },
 
   _humanizeError(msg) {
@@ -2729,7 +2819,14 @@ document.addEventListener('paste', async (e) => {
  * BOOTSTRAP
  * ════════════════════════════════════════════════════════════ */
 applyI18n();
-sb.auth.onAuthStateChange((event, session) => App.init(session));
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    $('loading').style.display = 'none';
+    UI.showScreen('recovery');
+    return;
+  }
+  App.init(session);
+});
 </script>
 </body>
 </html>
