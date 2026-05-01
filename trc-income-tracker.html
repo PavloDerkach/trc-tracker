@@ -1523,7 +1523,7 @@ const Api = {
     return sb.from('attachments').insert({
       job_id: jobId, user_id: userId,
       storage_path: path, kind,
-      file_name: file.name, mime_type: file.type,
+      file_name: file._displayName || file.name, mime_type: file.type,
     });
   },
   async deleteAttachment(id, path) {
