@@ -2486,12 +2486,14 @@ const JobForm = {
     let company = state.companies.find(c => c.id === companyId);
     let pctLabel = '—%';
     const rawCustom = $('f-custom-pct')?.value?.trim();
+    const rawTechPct = $('f-tech-pct')?.value?.trim();
     const virtualJob = {
       services_price:        parseFloat($('f-services-price')?.value) || 0,
       parts_client_price:    parseFloat($('f-parts-client')?.value)   || 0,
       parts_purchase_price:  parseFloat($('f-parts-buy')?.value)      || 0,
       company_id:            companyId,
       custom_commission_pct: (companyId === CUSTOM_COMPANY_ID && rawCustom !== '') ? parseFloat(rawCustom) : null,
+      tech_pct_override:     (rawTechPct !== '' && rawTechPct != null) ? parseFloat(rawTechPct) : null,
     };
 
     if (!company && virtualJob.custom_commission_pct != null) {
