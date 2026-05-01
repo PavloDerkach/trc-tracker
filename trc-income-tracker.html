@@ -1386,10 +1386,13 @@ function fmtMonthKey(key) {
 function calculatePayout(job, company) {
   const techPct = state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT;
 
-  // 2nd tech mode: only my fee counts, no commission, no parts
+  // 2nd tech mode: only my fee counts, but commission still applies
   if (job.is_second_tech) {
     const fee = Number(job.second_tech_fee) || 0;
-    return { subtotal: fee, commission: 0, pool: fee, payout: fee * techPct, isSecondTech: true };
+    if (!company) return { subtotal: fee, commission: 0, pool: fee, payout: fee * techPct, isSecondTech: true };
+    const commission = fee * company.commission_pct;
+    const pool = fee - commission;
+    return { subtotal: fee, commission, pool, payout: pool * techPct, isSecondTech: true };
   }
 
   // Custom commission (no company record)
@@ -2155,7 +2158,7 @@ const JobForm = {
 
   async save() {
     const row = this._collectInputs();
-    if (!row.company_id) { UI.showNotice('error', T('selectSupplier')); return; }
+    if (!row.company_id && !row.is_second_tech) { UI.showNotice('error', T('selectSupplier')); return; }
 
     const btn = $('save-btn');
     const originalText = btn?.textContent || T('save');
@@ -2410,15 +2413,21 @@ const JobForm = {
 
     if (isSecondTech) {
       const fee = parseFloat($('f-second-tech-fee')?.value) || 0;
-      const payout = fee * (techPct / 100);
+      const companyId = $('f-company')?.value;
+      const company2t = state.companies.find(c => c.id === companyId);
+      const commission2t = company2t ? fee * company2t.commission_pct : 0;
+      const pool2t = fee - commission2t;
+      const payout2t = pool2t * (techPct / 100);
+      const pct2t = company2t ? fmtPercent(company2t.commission_pct) : '0%';
       $('calc-rows').innerHTML = `
         <div class="calc-row"><span class="cl">My fee (2nd Tech)</span><span class="cv">${fmtMoney(fee)}</span></div>
+        <div class="calc-row neg"><span class="cl">− Lead Commission (${pct2t})</span><span class="cv">${fmtMoney(commission2t)}</span></div>
         <div class="calc-divider"></div>
-        <div class="calc-row bold"><span class="cl">= My pool</span><span class="cv">${fmtMoney(fee)}</span></div>
-        <div class="calc-row"><span class="cl">${T('myShareCalc', {pct: techPct})}</span><span class="cv">${fmtMoney(payout)}</span></div>`;
+        <div class="calc-row bold"><span class="cl">= My pool</span><span class="cv">${fmtMoney(pool2t)}</span></div>
+        <div class="calc-row"><span class="cl">${T('myShareCalc', {pct: techPct})}</span><span class="cv">${fmtMoney(payout2t)}</span></div>`;
       const totalEl = $('calc-total');
-      totalEl.textContent = fmtMoney(payout);
-      totalEl.className = 'calc-total-val ' + (payout >= 0 ? 'green' : 'red');
+      totalEl.textContent = fmtMoney(payout2t);
+      totalEl.className = 'calc-total-val ' + (payout2t >= 0 ? 'green' : 'red');
       return;
     }
 
