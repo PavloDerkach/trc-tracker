@@ -2238,6 +2238,7 @@ const JobForm = {
       this.updateCalc();
       this._renderAttachments();
       this._showReviewPanel(data, mode, files);
+      setTimeout(() => this._renderAttachments(), 50);
       $(textId).textContent = `✓ ${files.length} ${_lang === 'en' ? (files.length > 1 ? 'files' : 'file') : (files.length > 1 ? 'файла' : 'файл')} ${_lang === 'en' ? 'uploaded' : 'загружено'}`;
     } catch (err) {
       state.pending[mode].push(...files);
