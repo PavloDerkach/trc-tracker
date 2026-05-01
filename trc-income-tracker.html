@@ -2095,7 +2095,8 @@ const JobForm = {
     $('f-company').innerHTML = `<option value="">${T('selectCompany')}</option>` +
       state.companies.map(c =>
         `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (${fmtPercent(c.commission_pct)})</option>`
-      ).join('');
+      ).join('') +
+      `<option value="${CUSTOM_COMPANY_ID}">${T('customLeadSource')}</option>`;
   },
 
   _populateFromJob(job) {
