@@ -2541,28 +2541,32 @@ const JobForm = {
  * ════════════════════════════════════════════════════════════ */
 const Settings = {
   render() {
-    const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
-    $('s-tech-pct').value = techPct;
-    $('s-apikey').value = state.apiKey || '';
+    try {
+      const techPct = Math.round((state.profile?.tech_pct || CONFIG.DEFAULT_TECH_PCT) * 100);
+      $('s-tech-pct').value = techPct;
+      $('s-apikey').value = state.apiKey || '';
 
-    // Update settings info box with current language and pct
-    const infoBox = $('settings-info-box');
-    if (infoBox) infoBox.innerHTML = T('settingsInfo', {pct: techPct});
+      const infoBox = $('settings-info-box');
+      if (infoBox) infoBox.innerHTML = T('settingsInfo', {pct: techPct});
 
-    $('companies-list').innerHTML = state.companies.map(c => `
-      <div class="card">
-        <div class="co-item">
-          <div style="flex:1;cursor:pointer" onclick="Settings.editCompany('${c.id}')">
-            <div class="co-name">${escapeHtml(c.name)}</div>
-            <div class="co-pct">${fmtPercent(c.commission_pct)}</div>
-            ${c.notes ? `<div class="co-notes">${escapeHtml(c.notes)}</div>` : ''}
+      $('companies-list').innerHTML = state.companies.map(c => `
+        <div class="card">
+          <div class="co-item">
+            <div style="flex:1;cursor:pointer" onclick="Settings.editCompany('${c.id}')">
+              <div class="co-name">${escapeHtml(c.name)}</div>
+              <div class="co-pct">${fmtPercent(c.commission_pct)}</div>
+              ${c.notes ? `<div class="co-notes">${escapeHtml(c.notes)}</div>` : ''}
+            </div>
+            <div style="display:flex">
+              <button class="btn btn-icon" onclick="Settings.editCompany('${c.id}')">✏️</button>
+              <button class="btn btn-icon" onclick="Settings.deleteCompany('${c.id}')">🗑</button>
+            </div>
           </div>
-          <div style="display:flex">
-            <button class="btn btn-icon" onclick="Settings.editCompany('${c.id}')">✏️</button>
-            <button class="btn btn-icon" onclick="Settings.deleteCompany('${c.id}')">🗑</button>
-          </div>
-        </div>
-      </div>`).join('');
+        </div>`).join('');
+    } catch(e) {
+      console.error('Settings.render error:', e);
+      UI.showToast('Settings error: ' + e.message);
+    }
   },
 
   async save() {
