@@ -1575,7 +1575,9 @@ const Gemini = {
   PROMPTS: {
     hcp: `You are a strict data extraction tool for HouseCall Pro job screenshots.
 
-CRITICAL RULE for clientName: Extract the customer name ONLY from the job title header that says "Job for [Name]" or "Job for [Name]'s [Appliance]". This is the CUSTOMER name. DO NOT use any technician name, employee name, profile name, or account owner name that may appear elsewhere on the screen (e.g. in a profile avatar, assignee field, or technician section). If you cannot find a clear "Job for [Name]" pattern, return null for clientName.
+CRITICAL RULE for clientName: Extract the customer name ONLY from the job title header that says "Job for [Name]" or "Job for [Name]'s [Appliance]". This is the CUSTOMER name. DO NOT use any technician name, employee name, profile name, or account owner name that may appear elsewhere on the screen. If you cannot find a clear "Job for [Name]" pattern, return null for clientName.
+
+CRITICAL RULE for jobDate: Extract the appointment or job date visible on screen. The current year is 2026 — if you see a date like "4/30/2026" or "Apr 30, 2026" or "Thu, 4/30/2026", return "2026-04-30". NEVER return a year before 2024. If the year is ambiguous, assume 2025 or 2026.
 
 Other rules:
 - jobId: The COMPLETE HCP job number after "Job #" (8-9 digits). Never use partial numbers.
@@ -2234,6 +2236,16 @@ const JobForm = {
       await Promise.all(uploads.map(p => p.catch(err => console.warn('Upload:', err))));
 
       await App.loadUserData();
+      // Auto-open the month of the saved job in both views
+      const jobDate = row.job_date || today();
+      const monthKey = jobDate.slice(0, 7);
+      const openMonths = new Set(Storage.getJSON('months_open', []));
+      openMonths.add(monthKey);
+      Storage.setJSON('months_open', [...openMonths]);
+      const openGrid = new Set(Storage.getJSON('grid_months_open', []));
+      openGrid.add(monthKey);
+      Storage.setJSON('grid_months_open', [...openGrid]);
+
       resetBtn();
       UI.showToast(T('saved'));
       UI.showScreen('list');
